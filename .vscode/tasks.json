@@ -1,0 +1,56 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build: release",
+      "type": "shell",
+      "command": "dotnet",
+      "args": [
+        "build",
+        "steelseries-sonar-tray.sln",
+        "-c",
+        "Release"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "run",
+      "type": "shell",
+      "command": "dotnet",
+      "args": [
+        "run",
+        "--project",
+        "steelseries-sonar-tray/steelseries-sonar-tray.csproj"
+      ],
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "publish: dist",
+      "type": "shell",
+      "command": "dotnet",
+      "args": [
+        "publish",
+        "steelseries-sonar-tray/steelseries-sonar-tray.csproj",
+        "-p:PublishProfile=Folder"
+      ],
+      "group": "build",
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "publish: single exe",
+      "type": "shell",
+      "command": "dotnet",
+      "args": [
+        "publish",
+        "steelseries-sonar-tray/steelseries-sonar-tray.csproj",
+        "-p:PublishProfile=SingleFile"
+      ],
+      "group": "build",
+      "problemMatcher": "$msCompile"
+    }
+  ]
+}

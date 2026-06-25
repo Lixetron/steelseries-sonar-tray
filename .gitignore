@@ -1,0 +1,16 @@
+bin/
+obj/
+dist/
+dist-single/
+_publish-*/
+/packages/
+riderModule.iml
+/_ReSharper.Caches/
+
+.vscode/*
+!.vscode/tasks.json
+
+
+.idea/
+
+/tmp-*
