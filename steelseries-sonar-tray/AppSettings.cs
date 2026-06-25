@@ -12,6 +12,8 @@ public sealed class AppSettings
         "settings.json");
 
     public bool MediaKeysOverride { get; set; }
+    public string MediaKeysOverrideChannel { get; set; } = "master";
+    public bool VolumeOverlayEnabled { get; set; } = true;
     public bool DiscordScreenshareEchoFix { get; set; }
     public bool AudioVisualizerEnabled { get; set; } = true;
 

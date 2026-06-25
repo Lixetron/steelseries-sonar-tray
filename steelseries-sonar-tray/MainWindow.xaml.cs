@@ -35,6 +35,7 @@ public partial class MainWindow : Window
     private readonly SonarChannelLevelMonitor _levelMonitor = new();
     private readonly AppSettings _settings;
     private readonly MediaKeysOverrideService _mediaKeysOverride;
+    private readonly VolumeOverlayService _volumeOverlay;
     private readonly DispatcherTimer _volumeThrottleTimer;
     private readonly DispatcherTimer _levelPollTimer;
     private readonly DispatcherTimer _settingsSyncTimer;
@@ -61,11 +62,13 @@ public partial class MainWindow : Window
     private DateTime _lastVolumeSendUtc = DateTime.MinValue;
     private string? _cachedStatusText;
     private double? _lockedHeaderHostHeight;
+    private bool _suppressMediaKeysChannelChange;
 
-    public MainWindow(AppSettings settings, MediaKeysOverrideService mediaKeysOverride)
+    public MainWindow(AppSettings settings, MediaKeysOverrideService mediaKeysOverride, VolumeOverlayService volumeOverlay)
     {
         _settings = settings;
         _mediaKeysOverride = mediaKeysOverride;
+        _volumeOverlay = volumeOverlay;
         _mediaKeysOverride.MixerChanged += MediaKeysOverride_MixerChanged;
         InitializeComponent();
 
@@ -159,6 +162,10 @@ public partial class MainWindow : Window
         _settingsSyncTimer.Tick += SettingsSyncTimer_Tick;
 
         MediaKeysOverrideToggle.IsChecked = _settings.MediaKeysOverride;
+        PopulateMediaKeysOverrideChannelCombo();
+        SelectMediaKeysOverrideChannel(_settings.MediaKeysOverrideChannel);
+        ApplyMediaKeysOverrideSettings();
+        VolumeOverlayToggle.IsChecked = _settings.VolumeOverlayEnabled;
         DiscordEchoFixToggle.IsChecked = _settings.DiscordScreenshareEchoFix;
         AudioVisualizerToggle.IsChecked = _settings.AudioVisualizerEnabled;
 
@@ -1458,17 +1465,96 @@ public partial class MainWindow : Window
     private void FeatureToggle_Changed(object sender, RoutedEventArgs e)
     {
         _settings.MediaKeysOverride = MediaKeysOverrideToggle.IsChecked == true;
+        _settings.VolumeOverlayEnabled = VolumeOverlayToggle.IsChecked == true;
         _settings.DiscordScreenshareEchoFix = DiscordEchoFixToggle.IsChecked == true;
         _settings.AudioVisualizerEnabled = AudioVisualizerToggle.IsChecked == true;
         _settings.Save();
 
         ApplyAudioVisualizerState();
-        _mediaKeysOverride.SetEnabled(_settings.MediaKeysOverride);
+        ApplyMediaKeysOverrideSettings();
+
+        if (!_settings.VolumeOverlayEnabled)
+        {
+            _volumeOverlay.HideImmediately();
+        }
 
         if (_settings.DiscordScreenshareEchoFix)
         {
             // Future: locate discord.exe render session and mute chatRender endpoint.
         }
+    }
+
+    private void MediaKeysOverrideChannelCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_suppressMediaKeysChannelChange || MediaKeysOverrideChannelCombo.SelectedItem is null)
+        {
+            return;
+        }
+
+        _settings.MediaKeysOverrideChannel = GetSelectedMediaKeysOverrideChannel();
+        _settings.Save();
+        ApplyMediaKeysOverrideSettings();
+    }
+
+    private void PopulateMediaKeysOverrideChannelCombo()
+    {
+        MediaKeysOverrideChannelCombo.Items.Clear();
+
+        foreach (var channel in SonarChannels.All)
+        {
+            MediaKeysOverrideChannelCombo.Items.Add(new ComboBoxItem
+            {
+                Content = SonarChannels.GetDisplayName(channel),
+                Tag = channel
+            });
+        }
+    }
+
+    private void SelectMediaKeysOverrideChannel(string channel)
+    {
+        var normalizedChannel = SonarChannels.NormalizeChannel(channel);
+
+        _suppressMediaKeysChannelChange = true;
+        try
+        {
+            for (var i = 0; i < MediaKeysOverrideChannelCombo.Items.Count; i++)
+            {
+                if (MediaKeysOverrideChannelCombo.Items[i] is ComboBoxItem item
+                    && string.Equals(item.Tag as string, normalizedChannel, StringComparison.OrdinalIgnoreCase))
+                {
+                    MediaKeysOverrideChannelCombo.SelectedIndex = i;
+                    return;
+                }
+            }
+
+            MediaKeysOverrideChannelCombo.SelectedIndex = 0;
+        }
+        finally
+        {
+            _suppressMediaKeysChannelChange = false;
+        }
+    }
+
+    private string GetSelectedMediaKeysOverrideChannel()
+    {
+        if (MediaKeysOverrideChannelCombo.SelectedItem is ComboBoxItem item)
+        {
+            return SonarChannels.NormalizeChannel(item.Tag as string);
+        }
+
+        return SonarChannels.NormalizeChannel(_settings.MediaKeysOverrideChannel);
+    }
+
+    private void ApplyMediaKeysOverrideSettings()
+    {
+        var enabled = MediaKeysOverrideToggle.IsChecked == true;
+        MediaKeysOverrideChannelPanel.IsEnabled = enabled;
+        MediaKeysOverrideChannelPanel.Opacity = enabled ? 1.0 : 0.55;
+
+        var channel = GetSelectedMediaKeysOverrideChannel();
+        _settings.MediaKeysOverrideChannel = channel;
+        _mediaKeysOverride.SetTargetChannel(channel);
+        _mediaKeysOverride.SetEnabled(enabled);
     }
 
     private void MediaKeysOverride_MixerChanged()

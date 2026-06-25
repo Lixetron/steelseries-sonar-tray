@@ -25,8 +25,20 @@ public sealed class MediaKeysOverrideService : IDisposable
     private bool _disposed;
     private DateTime _lastActionUtc = DateTime.MinValue;
     private float _pendingVolumeDelta;
+    private string _targetChannel = "master";
 
     public event Action? MixerChanged;
+    public event Action<VolumeNotificationState>? VolumeAdjusted;
+
+    public void SetTargetChannel(string channel)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        lock (_sync)
+        {
+            _targetChannel = SonarChannels.NormalizeChannel(channel);
+        }
+    }
 
     public void SetEnabled(bool enabled)
     {
@@ -163,14 +175,17 @@ public sealed class MediaKeysOverrideService : IDisposable
                     _pendingVolumeDelta = 0f;
                 }
 
+                VolumeNotificationState? notification = null;
                 var handled = false;
                 if (Math.Abs(volumeDelta) > 0.0001f)
                 {
-                    handled = await AdjustMasterVolumeAsync(volumeDelta).ConfigureAwait(false);
+                    notification = await AdjustTargetChannelVolumeAsync(volumeDelta).ConfigureAwait(false);
+                    handled = notification.HasValue;
                 }
                 else if (virtualKey == VkVolumeMute)
                 {
-                    handled = await ToggleMasterMuteAsync().ConfigureAwait(false);
+                    notification = await ToggleTargetChannelMuteAsync().ConfigureAwait(false);
+                    handled = notification.HasValue;
                     virtualKey = 0;
                 }
 
@@ -178,6 +193,10 @@ public sealed class MediaKeysOverrideService : IDisposable
                 {
                     _lastActionUtc = DateTime.UtcNow;
                     MixerChanged?.Invoke();
+                    if (notification.HasValue)
+                    {
+                        VolumeAdjusted?.Invoke(notification.Value);
+                    }
                 }
 
                 lock (_sync)
@@ -206,52 +225,92 @@ public sealed class MediaKeysOverrideService : IDisposable
         return remainingMs > 0 ? TimeSpan.FromMilliseconds(remainingMs) : TimeSpan.Zero;
     }
 
-    private async Task<bool> AdjustMasterVolumeAsync(float delta)
+    private async Task<VolumeNotificationState?> AdjustTargetChannelVolumeAsync(float delta)
     {
         if (!await _apiClient.EnsureConnectedAsync().ConfigureAwait(false))
         {
-            return false;
+            return null;
         }
 
+        var channel = GetTargetChannel();
         var snapshot = await _apiClient.GetMixerSnapshotAsync().ConfigureAwait(false);
-        if (!snapshot.Channels.TryGetValue("master", out var channelSettings))
+        if (!snapshot.Channels.TryGetValue(channel, out var channelSettings))
         {
-            return false;
+            return null;
         }
 
         var currentVolume = channelSettings.Monitoring?.Volume ?? 0f;
+        var isMuted = channelSettings.Monitoring?.Muted == true;
         var newVolume = Math.Clamp(currentVolume + delta, 0f, 1f);
         if (Math.Abs(newVolume - currentVolume) <= 0.0001f)
         {
-            return false;
+            return null;
         }
 
         var updated = await _apiClient
-            .SetVolumeAsync("master", newVolume, SonarMixerPath.Monitoring)
+            .SetVolumeAsync(channel, newVolume, SonarMixerPath.Monitoring)
             .ConfigureAwait(false);
 
-        return updated is not null;
+        if (updated is null)
+        {
+            return null;
+        }
+
+        if (updated.TryGetValue(channel, out var updatedSettings))
+        {
+            var monitoring = updatedSettings.Monitoring;
+            return new VolumeNotificationState(
+                channel,
+                monitoring?.Volume ?? newVolume,
+                monitoring?.Muted == true);
+        }
+
+        return new VolumeNotificationState(channel, newVolume, isMuted);
     }
 
-    private async Task<bool> ToggleMasterMuteAsync()
+    private async Task<VolumeNotificationState?> ToggleTargetChannelMuteAsync()
     {
         if (!await _apiClient.EnsureConnectedAsync().ConfigureAwait(false))
         {
-            return false;
+            return null;
         }
 
+        var channel = GetTargetChannel();
         var snapshot = await _apiClient.GetMixerSnapshotAsync().ConfigureAwait(false);
-        if (!snapshot.Channels.TryGetValue("master", out var channelSettings))
+        if (!snapshot.Channels.TryGetValue(channel, out var channelSettings))
         {
-            return false;
+            return null;
         }
 
         var muted = channelSettings.Monitoring?.Muted == true;
+        var volume = channelSettings.Monitoring?.Volume ?? 0f;
         var updated = await _apiClient
-            .SetMuteAsync("master", !muted, SonarMixerPath.Monitoring)
+            .SetMuteAsync(channel, !muted, SonarMixerPath.Monitoring)
             .ConfigureAwait(false);
 
-        return updated is not null;
+        if (updated is null)
+        {
+            return null;
+        }
+
+        if (updated.TryGetValue(channel, out var updatedSettings))
+        {
+            var monitoring = updatedSettings.Monitoring;
+            return new VolumeNotificationState(
+                channel,
+                monitoring?.Volume ?? volume,
+                monitoring?.Muted == true);
+        }
+
+        return new VolumeNotificationState(channel, volume, !muted);
+    }
+
+    private string GetTargetChannel()
+    {
+        lock (_sync)
+        {
+            return _targetChannel;
+        }
     }
 
     private bool IsEnabled()

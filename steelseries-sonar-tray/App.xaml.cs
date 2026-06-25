@@ -12,6 +12,7 @@ public partial class App : Application
     private MainWindow? _mainWindow;
     private AppSettings? _settings;
     private MediaKeysOverrideService? _mediaKeysOverride;
+    private VolumeOverlayService? _volumeOverlay;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -19,11 +20,12 @@ public partial class App : Application
 
         _settings = AppSettings.Load();
 
+        _volumeOverlay = new VolumeOverlayService(() => _settings!.VolumeOverlayEnabled);
         _mediaKeysOverride = new MediaKeysOverrideService();
-        _mainWindow = new MainWindow(_settings, _mediaKeysOverride);
+        _mediaKeysOverride.VolumeAdjusted += state => _volumeOverlay.Show(state);
+        _mainWindow = new MainWindow(_settings, _mediaKeysOverride, _volumeOverlay);
         _ = new WindowInteropHelper(_mainWindow).EnsureHandle();
         _ = _mainWindow.WarmupAsync();
-        _mediaKeysOverride.SetEnabled(_settings.MediaKeysOverride);
 
         _notifyIcon = new WinForms.NotifyIcon
         {
@@ -83,6 +85,9 @@ public partial class App : Application
 
         _mediaKeysOverride?.Dispose();
         _mediaKeysOverride = null;
+
+        _volumeOverlay?.Dispose();
+        _volumeOverlay = null;
 
         base.OnExit(e);
     }

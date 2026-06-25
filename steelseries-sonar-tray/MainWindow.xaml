@@ -412,6 +412,22 @@
                     <CheckBox x:Name="MediaKeysOverrideToggle"
                               Content="Media Keys Override"
                               Style="{StaticResource FluentToggleStyle}"
+                              Margin="0,0,0,6"
+                              Checked="FeatureToggle_Changed"
+                              Unchecked="FeatureToggle_Changed"/>
+                    <StackPanel x:Name="MediaKeysOverrideChannelPanel"
+                                Margin="50,0,0,10">
+                        <TextBlock Text="Target channel"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   FontSize="11"
+                                   Margin="0,0,0,6"/>
+                        <ComboBox x:Name="MediaKeysOverrideChannelCombo"
+                                  Style="{StaticResource FluentComboBoxStyle}"
+                                  SelectionChanged="MediaKeysOverrideChannelCombo_SelectionChanged"/>
+                    </StackPanel>
+                    <CheckBox x:Name="VolumeOverlayToggle"
+                              Content="Volume Overlay"
+                              Style="{StaticResource FluentToggleStyle}"
                               Margin="0,0,0,10"
                               Checked="FeatureToggle_Changed"
                               Unchecked="FeatureToggle_Changed"/>
