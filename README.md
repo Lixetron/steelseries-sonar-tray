@@ -356,24 +356,25 @@ steelseries-sonar-tray/
 │   ├── TrayIconProvider.cs        # Tray icon styles + theme auto
 │   ├── VolumeOverlay*.cs          # Overlay window + service
 │   ├── Audio/                     # WASAPI level monitoring
-│   ├── Assets/                    # Icons and generator script
+│   ├── Assets/                    # Icons
 │   │   ├── app.ico / app-icon.png # Executable icon (Task Manager, Explorer)
 │   │   ├── tray-accent.*          # Cyan tray glyph
 │   │   ├── tray-white.*           # White tray glyph
-│   │   ├── tray-dark.*            # Dark tray glyph
-│   │   └── GenerateIcons.ps1      # Regenerate all icons from code
+│   │   └── tray-dark.*            # Dark tray glyph
 │   ├── Themes/FluentDark.xaml
 │   └── Properties/PublishProfiles/
-├── scripts/publish.ps1
+├── scripts/
+│   ├── GenerateIcons.ps1          # Regenerate all icons from code
+│   └── publish.ps1
 └── README.md
 ```
 
 ### Regenerating icons
 
-Icons are drawn programmatically (Fluent dark tile + cyan mixer bars). After changing colors or proportions in `GenerateIcons.ps1`, regenerate and rebuild:
+Icons are drawn programmatically (Fluent dark tile + cyan mixer bars). After changing colors or proportions in `scripts/GenerateIcons.ps1`, regenerate and rebuild:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File steelseries-sonar-tray/Assets/GenerateIcons.ps1
+powershell -ExecutionPolicy Bypass -File scripts/GenerateIcons.ps1
 dotnet build steelseries-sonar-tray/steelseries-sonar-tray.csproj -c Release
 ```
 
@@ -432,7 +433,7 @@ For code changes:
 1. Fork and create a feature branch.
 2. Keep diffs focused; match existing C# / WPF style.
 3. Verify `dotnet build steelseries-sonar-tray.sln -c Release` passes.
-4. If you change icons, run `GenerateIcons.ps1` and include updated `Assets/`.
+4. If you change icons, run `scripts/GenerateIcons.ps1` and include updated `Assets/`.
 5. Describe user-visible behavior in the PR.
 
 ---

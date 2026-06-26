@@ -305,7 +305,7 @@ function Save-PngIco {
     $ms.Dispose()
 }
 
-$assetsDir = $PSScriptRoot
+$assetsDir = Join-Path $PSScriptRoot "..\steelseries-sonar-tray\Assets"
 $accent = [System.Drawing.Color]::FromArgb(255, 96, 205, 255)
 $white = [System.Drawing.Color]::FromArgb(255, 255, 255, 255)
 $dark = [System.Drawing.Color]::FromArgb(255, 26, 26, 26)
