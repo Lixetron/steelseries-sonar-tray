@@ -23,13 +23,13 @@ public partial class App : Application
         _volumeOverlay = new VolumeOverlayService(() => _settings!.VolumeOverlayEnabled);
         _mediaKeysOverride = new MediaKeysOverrideService();
         _mediaKeysOverride.VolumeAdjusted += state => _volumeOverlay.Show(state);
-        _mainWindow = new MainWindow(_settings, _mediaKeysOverride, _volumeOverlay);
+        _mainWindow = new MainWindow(_settings, _mediaKeysOverride, _volumeOverlay, ApplyTrayIcon);
         _ = new WindowInteropHelper(_mainWindow).EnsureHandle();
         _ = _mainWindow.WarmupAsync();
 
         _notifyIcon = new WinForms.NotifyIcon
         {
-            Icon = SystemIcons.Application,
+            Icon = TrayIconProvider.Load(_settings.TrayIconStyle),
             Text = "Sonar Quick Mixer",
             Visible = true
         };
@@ -40,6 +40,22 @@ public partial class App : Application
         contextMenu.Items.Add("Open Mixer", null, (_, _) => ShowMixer());
         contextMenu.Items.Add("Exit", null, (_, _) => ShutdownApplication());
         _notifyIcon.ContextMenuStrip = contextMenu;
+    }
+
+    internal void ApplyTrayIcon()
+    {
+        if (_notifyIcon is null || _settings is null)
+        {
+            return;
+        }
+
+        var previousIcon = _notifyIcon.Icon;
+        _notifyIcon.Icon = TrayIconProvider.Load(_settings.TrayIconStyle);
+
+        if (previousIcon is not null)
+        {
+            previousIcon.Dispose();
+        }
     }
 
     private void NotifyIcon_MouseClick(object? sender, WinForms.MouseEventArgs e)

@@ -37,6 +37,7 @@ public partial class MainWindow : Window
     private readonly AppSettings _settings;
     private readonly MediaKeysOverrideService _mediaKeysOverride;
     private readonly VolumeOverlayService _volumeOverlay;
+    private readonly Action _applyTrayIcon;
     private readonly DispatcherTimer _volumeThrottleTimer;
     private readonly DispatcherTimer _levelPollTimer;
     private readonly DispatcherTimer _settingsSyncTimer;
@@ -65,12 +66,18 @@ public partial class MainWindow : Window
     private double? _lockedHeaderHostHeight;
     private bool _suppressMediaKeysChannelChange;
     private bool _suppressFeatureToggleChanges;
+    private bool _suppressTrayIconStyleChange;
 
-    public MainWindow(AppSettings settings, MediaKeysOverrideService mediaKeysOverride, VolumeOverlayService volumeOverlay)
+    public MainWindow(
+        AppSettings settings,
+        MediaKeysOverrideService mediaKeysOverride,
+        VolumeOverlayService volumeOverlay,
+        Action applyTrayIcon)
     {
         _settings = settings;
         _mediaKeysOverride = mediaKeysOverride;
         _volumeOverlay = volumeOverlay;
+        _applyTrayIcon = applyTrayIcon;
         _mediaKeysOverride.MixerChanged += MediaKeysOverride_MixerChanged;
         InitializeComponent();
 
@@ -178,6 +185,8 @@ public partial class MainWindow : Window
 
         PopulateMediaKeysOverrideChannelCombo();
         SelectMediaKeysOverrideChannel(_settings.MediaKeysOverrideChannel);
+        PopulateTrayIconStyleCombo();
+        SelectTrayIconStyle(_settings.TrayIconStyle);
         ApplyMediaKeysOverrideSettings();
         ApplyAudioVisualizerState();
 
@@ -1525,6 +1534,76 @@ public partial class MainWindow : Window
         _settings.MediaKeysOverrideChannel = GetSelectedMediaKeysOverrideChannel();
         _settings.Save();
         ApplyMediaKeysOverrideSettings();
+    }
+
+    private void TrayIconStyleCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_suppressTrayIconStyleChange || TrayIconStyleCombo.SelectedItem is null)
+        {
+            return;
+        }
+
+        _settings.TrayIconStyle = GetSelectedTrayIconStyle();
+        _settings.Save();
+        _applyTrayIcon();
+    }
+
+    private void PopulateTrayIconStyleCombo()
+    {
+        TrayIconStyleCombo.Items.Clear();
+
+        TrayIconStyleCombo.Items.Add(new ComboBoxItem
+        {
+            Content = "Auto (match Windows theme)",
+            Tag = TrayIconStyle.Auto
+        });
+        TrayIconStyleCombo.Items.Add(new ComboBoxItem
+        {
+            Content = "Accent (cyan)",
+            Tag = TrayIconStyle.Accent
+        });
+        TrayIconStyleCombo.Items.Add(new ComboBoxItem
+        {
+            Content = "White",
+            Tag = TrayIconStyle.White
+        });
+        TrayIconStyleCombo.Items.Add(new ComboBoxItem
+        {
+            Content = "Dark",
+            Tag = TrayIconStyle.Dark
+        });
+    }
+
+    private void SelectTrayIconStyle(TrayIconStyle style)
+    {
+        _suppressTrayIconStyleChange = true;
+        try
+        {
+            foreach (ComboBoxItem item in TrayIconStyleCombo.Items)
+            {
+                if (item.Tag is TrayIconStyle candidate && candidate == style)
+                {
+                    TrayIconStyleCombo.SelectedItem = item;
+                    return;
+                }
+            }
+
+            TrayIconStyleCombo.SelectedIndex = 0;
+        }
+        finally
+        {
+            _suppressTrayIconStyleChange = false;
+        }
+    }
+
+    private TrayIconStyle GetSelectedTrayIconStyle()
+    {
+        if (TrayIconStyleCombo.SelectedItem is ComboBoxItem { Tag: TrayIconStyle style })
+        {
+            return style;
+        }
+
+        return TrayIconStyle.Auto;
     }
 
     private void PopulateMediaKeysOverrideChannelCombo()

@@ -412,8 +412,21 @@
                     <CheckBox x:Name="AudioVisualizerToggle"
                               Content="Audio Visualizer"
                               Style="{StaticResource FluentToggleStyle}"
+                              Margin="0,0,0,10"
                               Checked="FeatureToggle_Changed"
                               Unchecked="FeatureToggle_Changed"/>
+                    <TextBlock Text="Appearance"
+                               Foreground="{StaticResource TextPrimaryBrush}"
+                               FontSize="12"
+                               FontWeight="SemiBold"
+                               Margin="0,8,0,10"/>
+                    <TextBlock Text="Tray icon"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               FontSize="11"
+                               Margin="0,0,0,6"/>
+                    <ComboBox x:Name="TrayIconStyleCombo"
+                              Style="{StaticResource FluentComboBoxStyle}"
+                              SelectionChanged="TrayIconStyleCombo_SelectionChanged"/>
                 </StackPanel>
             </Grid>
         </Grid>

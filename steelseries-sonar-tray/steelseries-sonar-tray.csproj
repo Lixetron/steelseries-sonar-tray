@@ -10,10 +10,28 @@
     <RootNamespace>SteelSeries.SonarTray</RootNamespace>
     <AssemblyName>steelseries-sonar-tray</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="NAudio" Version="2.3.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Assets\app-icon.png" />
+    <Content Include="Assets\tray-accent.png" />
+    <Content Include="Assets\tray-white.png" />
+    <Content Include="Assets\tray-dark.png" />
+    <Content Include="Assets\app.ico" />
+    <EmbeddedResource Include="Assets\tray-accent.ico">
+      <LogicalName>tray-accent.ico</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\tray-white.ico">
+      <LogicalName>tray-white.ico</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\tray-dark.ico">
+      <LogicalName>tray-dark.ico</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
 
 </Project>

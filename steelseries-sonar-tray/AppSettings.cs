@@ -16,6 +16,7 @@ public sealed class AppSettings
     public bool VolumeOverlayEnabled { get; set; } = true;
     public bool DiscordScreenshareEchoFix { get; set; }
     public bool AudioVisualizerEnabled { get; set; } = true;
+    public TrayIconStyle TrayIconStyle { get; set; } = TrayIconStyle.Auto;
 
     public static AppSettings Load()
     {
