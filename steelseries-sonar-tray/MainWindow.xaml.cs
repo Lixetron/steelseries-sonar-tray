@@ -63,6 +63,7 @@ public partial class MainWindow : Window
     private string? _cachedStatusText;
     private double? _lockedHeaderHostHeight;
     private bool _suppressMediaKeysChannelChange;
+    private bool _suppressFeatureToggleChanges;
 
     public MainWindow(AppSettings settings, MediaKeysOverrideService mediaKeysOverride, VolumeOverlayService volumeOverlay)
     {
@@ -161,17 +162,29 @@ public partial class MainWindow : Window
         };
         _settingsSyncTimer.Tick += SettingsSyncTimer_Tick;
 
-        MediaKeysOverrideToggle.IsChecked = _settings.MediaKeysOverride;
+        _suppressFeatureToggleChanges = true;
+        try
+        {
+            MediaKeysOverrideToggle.IsChecked = _settings.MediaKeysOverride;
+            VolumeOverlayToggle.IsChecked = _settings.VolumeOverlayEnabled;
+            DiscordEchoFixToggle.IsChecked = _settings.DiscordScreenshareEchoFix;
+            AudioVisualizerToggle.IsChecked = _settings.AudioVisualizerEnabled;
+        }
+        finally
+        {
+            _suppressFeatureToggleChanges = false;
+        }
+
         PopulateMediaKeysOverrideChannelCombo();
         SelectMediaKeysOverrideChannel(_settings.MediaKeysOverrideChannel);
         ApplyMediaKeysOverrideSettings();
-        VolumeOverlayToggle.IsChecked = _settings.VolumeOverlayEnabled;
-        DiscordEchoFixToggle.IsChecked = _settings.DiscordScreenshareEchoFix;
-        AudioVisualizerToggle.IsChecked = _settings.AudioVisualizerEnabled;
+        ApplyAudioVisualizerState();
 
         Closed += (_, _) =>
         {
             _mediaKeysOverride.MixerChanged -= MediaKeysOverride_MixerChanged;
+            SyncFeatureSettingsFromUi();
+            _settings.Save();
             _levelPollTimer.Stop();
             _settingsSyncTimer.Stop();
             _levelMonitor.Dispose();
@@ -1464,10 +1477,12 @@ public partial class MainWindow : Window
 
     private void FeatureToggle_Changed(object sender, RoutedEventArgs e)
     {
-        _settings.MediaKeysOverride = MediaKeysOverrideToggle.IsChecked == true;
-        _settings.VolumeOverlayEnabled = VolumeOverlayToggle.IsChecked == true;
-        _settings.DiscordScreenshareEchoFix = DiscordEchoFixToggle.IsChecked == true;
-        _settings.AudioVisualizerEnabled = AudioVisualizerToggle.IsChecked == true;
+        if (_suppressFeatureToggleChanges)
+        {
+            return;
+        }
+
+        SyncFeatureSettingsFromUi();
         _settings.Save();
 
         ApplyAudioVisualizerState();
@@ -1482,6 +1497,14 @@ public partial class MainWindow : Window
         {
             // Future: locate discord.exe render session and mute chatRender endpoint.
         }
+    }
+
+    private void SyncFeatureSettingsFromUi()
+    {
+        _settings.MediaKeysOverride = MediaKeysOverrideToggle.IsChecked == true;
+        _settings.VolumeOverlayEnabled = VolumeOverlayToggle.IsChecked == true;
+        _settings.DiscordScreenshareEchoFix = DiscordEchoFixToggle.IsChecked == true;
+        _settings.AudioVisualizerEnabled = AudioVisualizerToggle.IsChecked == true;
     }
 
     private void MediaKeysOverrideChannelCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
