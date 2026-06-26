@@ -6,7 +6,7 @@
 
 [![.NET](https://img.shields.io/badge/.NET-8.0-512BD4)](https://dotnet.microsoft.com/)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%2B-blue)](https://www.microsoft.com/windows)
-[![License](https://img.shields.io/badge/license-unlicensed-lightgrey)](#license)
+[![License](https://img.shields.io/badge/license-MIT-green)](#license)
 
 A lightweight Windows system-tray companion for [SteelSeries Sonar](https://www.steelseries.com/gg/sonar). Open a fast mixer popup, adjust channel volumes without launching SteelSeries GG, redirect hardware media keys to Sonar, and get a clean on-screen volume indicator.
 
@@ -142,7 +142,18 @@ Sonar must be running before the tray app can connect. There is no standalone So
 
 ## Installation
 
-### Option A — Build a release locally (recommended today)
+### Option A — Download from GitHub Releases (recommended)
+
+Open [**Releases**](https://github.com/lixetron/steelseries-sonar-tray/releases) and pick one asset:
+
+| Asset | Best for |
+|-------|----------|
+| **`SonarQuickMixer-vX.Y.Z-single.exe`** | Most users — self-contained, no separate .NET install |
+| **`SonarQuickMixer-vX.Y.Z-win-x64.zip`** | Smaller download — extract the folder and run `SonarQuickMixer.exe`; requires [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0) |
+
+Run `SonarQuickMixer.exe`. A tray icon appears; left-click opens the mixer.
+
+### Option B — Build a release locally
 
 ```powershell
 git clone https://github.com/lixetron/steelseries-sonar-tray.git
@@ -157,9 +168,7 @@ cd steelseries-sonar-tray
 # Output: dist\SonarQuickMixer.exe (+ .NET 8 runtime)
 ```
 
-Run `SonarQuickMixer.exe`. A tray icon appears; left-click opens the mixer.
-
-### Option B — Run from source (development)
+### Option C — Run from source (development)
 
 ```powershell
 dotnet run --project steelseries-sonar-tray/steelseries-sonar-tray.csproj
@@ -388,6 +397,18 @@ VS Code tasks (`.vscode/tasks.json`):
 | `Folder` | `dist/SonarQuickMixer.exe` | No (.NET 8 runtime required) |
 | `SingleFile` | `dist-single/SonarQuickMixer.exe` | Yes (`win-x64`) |
 
+### Cutting a release
+
+1. Bump `<Version>` in `steelseries-sonar-tray.csproj` if needed.
+2. Commit, push to GitHub, and tag:
+
+   ```powershell
+   git tag v1.0.0
+   git push origin master --tags
+   ```
+
+3. The [Release workflow](.github/workflows/release.yml) builds both assets and publishes a GitHub Release with auto-generated notes. Edit the release description on GitHub if you want to highlight specific changes.
+
 ### Project structure
 
 **Naming**
@@ -452,7 +473,7 @@ Planned or discussed enhancements:
 - [ ] **Custom hotkeys per channel** — user-defined bindings instead of only media keys
 - [ ] **Physical device support** — Stream Deck, MIDI/HID knobs, custom mix controllers
 - [ ] **Volume overlay on all volume changes** — requires polling or push from Sonar (not available today)
-- [ ] **GitHub Releases** — pre-built binaries for non-builders
+- [x] **GitHub Releases** — pre-built binaries for non-builders (tag `v*` → CI builds single `.exe` + folder `.zip`)
 
 ---
 
@@ -496,7 +517,7 @@ For code changes:
 
 ## License
 
-No license file is included in this repository yet. All rights reserved by the repository owner until a license is added. If you plan to distribute forks or binaries publicly, add an explicit license (e.g. MIT) first.
+[MIT](LICENSE) — Copyright © 2026 Lixetron.
 
 ---
 

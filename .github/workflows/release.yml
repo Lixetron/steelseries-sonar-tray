@@ -1,0 +1,52 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Publish single-file (self-contained)
+        run: dotnet publish steelseries-sonar-tray/steelseries-sonar-tray.csproj -p:PublishProfile=SingleFile
+
+      - name: Publish folder (framework-dependent)
+        run: dotnet publish steelseries-sonar-tray/steelseries-sonar-tray.csproj -p:PublishProfile=Folder
+
+      - name: Package release assets
+        shell: pwsh
+        run: |
+          $tag = '${{ github.ref_name }}'
+          Copy-Item dist-single/SonarQuickMixer.exe "SonarQuickMixer-$tag-single.exe"
+          Compress-Archive -Path dist/* -DestinationPath "SonarQuickMixer-$tag-win-x64.zip"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          body: |
+            ## Downloads
+
+            | Asset | When to use |
+            |-------|-------------|
+            | `SonarQuickMixer-*-single.exe` | **Recommended** — one self-contained file, no separate .NET install (~155 MB) |
+            | `SonarQuickMixer-*-win-x64.zip` | Smaller download — extract and run `SonarQuickMixer.exe`; requires [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0) |
+
+            See the [README](https://github.com/${{ github.repository }}/blob/master/README.md#installation) for setup and autostart.
+          files: |
+            SonarQuickMixer-${{ github.ref_name }}-single.exe
+            SonarQuickMixer-${{ github.ref_name }}-win-x64.zip
