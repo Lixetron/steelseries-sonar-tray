@@ -4,7 +4,7 @@ using System.Windows.Interop;
 using Application = System.Windows.Application;
 using WinForms = System.Windows.Forms;
 
-namespace SteelSeries.SonarTray;
+namespace SonarQuickMixer;
 
 public partial class App : Application
 {

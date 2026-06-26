@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace SteelSeries.SonarTray;
+namespace SonarQuickMixer;
 
 public sealed class MediaKeysOverrideService : IDisposable
 {

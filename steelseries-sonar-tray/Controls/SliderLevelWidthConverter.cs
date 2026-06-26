@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Windows.Data;
 
-namespace SteelSeries.SonarTray.Controls;
+namespace SonarQuickMixer.Controls;
 
 public sealed class SliderLevelWidthConverter : IMultiValueConverter
 {

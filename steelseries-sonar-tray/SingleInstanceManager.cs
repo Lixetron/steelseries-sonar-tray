@@ -1,12 +1,12 @@
 using System.IO.Pipes;
 using System.Text;
 
-namespace SteelSeries.SonarTray;
+namespace SonarQuickMixer;
 
 internal sealed class SingleInstanceManager : IDisposable
 {
-    private const string MutexName = "SteelSeries.SonarTray.SingleInstance";
-    private const string PipeName = "SteelSeries.SonarTray.SingleInstance";
+    private const string MutexName = "SonarQuickMixer.SingleInstance";
+    private const string PipeName = "SonarQuickMixer.SingleInstance";
     private const string ShowCommand = "show";
 
     private Mutex? _mutex;

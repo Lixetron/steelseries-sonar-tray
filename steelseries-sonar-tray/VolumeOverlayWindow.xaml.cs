@@ -3,7 +3,7 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 
-namespace SteelSeries.SonarTray;
+namespace SonarQuickMixer;
 
 public partial class VolumeOverlayWindow : Window
 {

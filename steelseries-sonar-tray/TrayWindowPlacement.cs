@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using WinForms = System.Windows.Forms;
 
-namespace SteelSeries.SonarTray;
+namespace SonarQuickMixer;
 
 internal static class TrayWindowPlacement
 {

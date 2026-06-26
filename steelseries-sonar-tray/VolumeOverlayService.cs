@@ -2,7 +2,7 @@ using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Threading;
 
-namespace SteelSeries.SonarTray;
+namespace SonarQuickMixer;
 
 public sealed class VolumeOverlayService : IDisposable
 {

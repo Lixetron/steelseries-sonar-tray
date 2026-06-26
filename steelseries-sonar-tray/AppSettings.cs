@@ -1,14 +1,14 @@
 using System.IO;
 using System.Text.Json;
 
-namespace SteelSeries.SonarTray;
+namespace SonarQuickMixer;
 
 public sealed class AppSettings
 {
     private static readonly string SettingsPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "SteelSeries",
-        "SonarTray",
+        "Lixetron",
+        "SonarQuickMixer",
         "settings.json");
 
     public bool RunAtWindowsStartup { get; set; }

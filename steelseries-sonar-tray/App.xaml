@@ -1,4 +1,4 @@
-<Application x:Class="SteelSeries.SonarTray.App"
+<Application x:Class="SonarQuickMixer.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              ShutdownMode="OnExplicitShutdown">

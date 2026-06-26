@@ -7,10 +7,16 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
-    <RootNamespace>SteelSeries.SonarTray</RootNamespace>
-    <AssemblyName>steelseries-sonar-tray</AssemblyName>
+    <RootNamespace>SonarQuickMixer</RootNamespace>
+    <AssemblyName>SonarQuickMixer</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+    <Version>1.0.0</Version>
+    <AssemblyTitle>Sonar Quick Mixer</AssemblyTitle>
+    <Product>Sonar Quick Mixer</Product>
+    <Description>Lightweight Windows system-tray companion for SteelSeries Sonar.</Description>
+    <Company>Lixetron</Company>
+    <Copyright>Copyright © 2026 Lixetron</Copyright>
   </PropertyGroup>
 
   <ItemGroup>

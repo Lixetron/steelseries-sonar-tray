@@ -1,6 +1,6 @@
 using NAudio.CoreAudioApi;
 
-namespace SteelSeries.SonarTray.Audio;
+namespace SonarQuickMixer.Audio;
 
 internal static class SonarVirtualChannelMap
 {

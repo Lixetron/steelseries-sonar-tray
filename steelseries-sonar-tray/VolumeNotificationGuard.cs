@@ -3,7 +3,7 @@ using System.Windows;
 using System.Windows.Interop;
 using WinForms = System.Windows.Forms;
 
-namespace SteelSeries.SonarTray;
+namespace SonarQuickMixer;
 
 internal static class VolumeNotificationGuard
 {

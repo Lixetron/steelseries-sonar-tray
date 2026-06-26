@@ -1,7 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 
-namespace SteelSeries.SonarTray.Controls;
+namespace SonarQuickMixer.Controls;
 
 public static class SliderLevelProperties
 {

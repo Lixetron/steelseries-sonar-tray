@@ -4,10 +4,10 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
-using SteelSeries.SonarTray.Audio;
-using SteelSeries.SonarTray.Controls;
+using SonarQuickMixer.Audio;
+using SonarQuickMixer.Controls;
 
-namespace SteelSeries.SonarTray;
+namespace SonarQuickMixer;
 
 public partial class MainWindow : Window
 {

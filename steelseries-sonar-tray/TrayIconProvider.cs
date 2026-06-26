@@ -2,7 +2,7 @@ using System.Drawing;
 using System.Reflection;
 using Microsoft.Win32;
 
-namespace SteelSeries.SonarTray;
+namespace SonarQuickMixer;
 
 internal static class TrayIconProvider
 {

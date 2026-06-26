@@ -1,11 +1,11 @@
 using Microsoft.Win32;
 
-namespace SteelSeries.SonarTray;
+namespace SonarQuickMixer;
 
 public static class WindowsStartupRegistration
 {
     private const string RegistryRunKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
-    private const string ValueName = "SteelSeries Sonar Tray";
+    private const string ValueName = "Sonar Quick Mixer";
 
     public static bool IsRegistered()
     {

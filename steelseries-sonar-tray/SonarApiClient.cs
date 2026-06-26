@@ -2,9 +2,9 @@ using System.Globalization;
 using System.IO;
 using System.Net.Http;
 using System.Text.Json;
-using SteelSeries.SonarTray.Audio;
+using SonarQuickMixer.Audio;
 
-namespace SteelSeries.SonarTray;
+namespace SonarQuickMixer;
 
 public sealed class SonarApiClient : IDisposable
 {

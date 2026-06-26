@@ -1,4 +1,4 @@
-namespace SteelSeries.SonarTray;
+namespace SonarQuickMixer;
 
 public sealed class SonarMixerSnapshot
 {

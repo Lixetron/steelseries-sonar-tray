@@ -127,14 +127,14 @@ cd steelseries-sonar-tray
 
 # Self-contained single executable (no separate .NET install needed)
 .\scripts\publish.ps1 -Single
-# Output: dist-single\steelseries-sonar-tray.exe
+# Output: dist-single\SonarQuickMixer.exe
 
 # Or framework-dependent folder publish (requires .NET 8 runtime)
 .\scripts\publish.ps1
-# Output: dist\
+# Output: dist\SonarQuickMixer.exe (+ .NET 8 runtime)
 ```
 
-Run `steelseries-sonar-tray.exe`. A tray icon appears; left-click opens the mixer.
+Run `SonarQuickMixer.exe`. A tray icon appears; left-click opens the mixer.
 
 ### Option B — Run from source (development)
 
@@ -147,7 +147,7 @@ dotnet run --project steelseries-sonar-tray/steelseries-sonar-tray.csproj
 Windows does not configure this automatically. To start with Windows:
 
 1. Press `Win+R`, type `shell:startup`, press Enter.
-2. Create a shortcut to `steelseries-sonar-tray.exe` in that folder.
+2. Create a shortcut to `SonarQuickMixer.exe` in that folder.
 
 Ensure SteelSeries GG (or at least Sonar) also starts before or with the tray app.
 
@@ -190,7 +190,7 @@ Settings persist immediately to disk. Tray icon changes apply without restarting
 File location:
 
 ```text
-%LocalAppData%\SteelSeries\SonarTray\settings.json
+%LocalAppData%\Lixetron\SonarQuickMixer\settings.json
 ```
 
 Example:
@@ -340,15 +340,24 @@ VS Code tasks (`.vscode/tasks.json`):
 
 | Profile | Output | Self-contained |
 |---------|--------|----------------|
-| `Folder` | `dist/` | No (.NET 8 runtime required) |
-| `SingleFile` | `dist-single/steelseries-sonar-tray.exe` | Yes (`win-x64`) |
+| `Folder` | `dist/SonarQuickMixer.exe` | No (.NET 8 runtime required) |
+| `SingleFile` | `dist-single/SonarQuickMixer.exe` | Yes (`win-x64`) |
 
 ### Project structure
 
+**Naming**
+
+| Context | Name |
+|---------|------|
+| Display name (UI, file properties, autostart) | Sonar Quick Mixer |
+| Executable, namespace, AppData, mutex | `SonarQuickMixer` |
+| Repository / folders on disk | `steelseries-sonar-tray` (GitHub repo name) |
+
 ```text
-steelseries-sonar-tray/
+steelseries-sonar-tray/          # repository root (GitHub name unchanged)
 ├── steelseries-sonar-tray.sln
-├── steelseries-sonar-tray/
+├── steelseries-sonar-tray/        # .NET project folder
+│   ├── steelseries-sonar-tray.csproj   # builds SonarQuickMixer.exe
 │   ├── App.xaml(.cs)              # Tray icon, app lifetime
 │   ├── MainWindow.xaml(.cs)       # Mixer + settings UI
 │   ├── SonarApiClient.cs          # Sonar HTTP API
