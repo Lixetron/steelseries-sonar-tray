@@ -72,8 +72,8 @@ public sealed class MediaKeysOverrideService : IDisposable
             return;
         }
 
-        _disposed = true;
         SetEnabled(false);
+        _disposed = true;
         _actionGate.Dispose();
         _apiClient.Dispose();
     }
