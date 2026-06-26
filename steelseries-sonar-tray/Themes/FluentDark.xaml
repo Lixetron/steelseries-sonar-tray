@@ -229,12 +229,12 @@
         <Setter Property="Minimum" Value="0"/>
         <Setter Property="Maximum" Value="100"/>
         <Setter Property="IsSnapToTickEnabled" Value="False"/>
-        <Setter Property="Height" Value="24"/>
+        <Setter Property="Height" Value="26"/>
         <Setter Property="Margin" Value="0,4,0,0"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Slider">
-                    <Grid Margin="0,6">
+                    <Grid Margin="0,5">
                         <Grid x:Name="TrackContainer"
                               VerticalAlignment="Center"
                               Height="4">
@@ -301,7 +301,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Slider">
-                    <Grid Margin="0,6">
+                    <Grid Margin="0,5">
                         <Grid x:Name="TrackContainer"
                               VerticalAlignment="Center"
                               Height="4">
