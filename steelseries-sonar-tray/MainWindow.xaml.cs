@@ -14,6 +14,7 @@ public partial class MainWindow : Window
     private const int VolumeThrottleMs = 16;
     private const double VolumeClickJumpThreshold = 2.0;
     private const int LevelPollIntervalMs = 33;
+    private const double VisualizerDisplayGain = 1.45;
     private const int SettingsSyncIntervalMs = 1000;
     private const double SlideDistanceDip = 24;
     private const int ShowAnimationMs = 240;
@@ -718,8 +719,8 @@ public partial class MainWindow : Window
                 continue;
             }
 
-            var effectiveLevel = Math.Min(rawLevel, channelSlider.Value / 100d);
-            peak = Math.Max(peak, effectiveLevel);
+            var volumeFactor = channelSlider.Value / 100d;
+            peak = Math.Max(peak, rawLevel * volumeFactor);
         }
 
         return peak;
@@ -739,9 +740,12 @@ public partial class MainWindow : Window
             return;
         }
 
-        var volumeCap = slider.Value / 100d;
-        SliderLevelProperties.SetLevel(slider, Math.Min(rawLevel, volumeCap));
+        var volumeFactor = slider.Value / 100d;
+        SliderLevelProperties.SetLevel(slider, MapVisualizerLevel(rawLevel, volumeFactor));
     }
+
+    private static double MapVisualizerLevel(double rawLevel, double volumeFactor) =>
+        Math.Clamp(rawLevel * volumeFactor * VisualizerDisplayGain, 0d, 1d);
 
     private bool IsSliderMuted(Slider slider) =>
         _sliderMuteToggles.TryGetValue(slider, out var muteToggle) && muteToggle.IsChecked == true;

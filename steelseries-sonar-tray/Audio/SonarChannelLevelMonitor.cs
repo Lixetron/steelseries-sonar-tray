@@ -4,7 +4,7 @@ namespace SteelSeries.SonarTray.Audio;
 
 public sealed class SonarChannelLevelMonitor : IDisposable
 {
-    private const float DecayFactor = 0.82f;
+    private const float DecayFactor = 0.88f;
     private static readonly TimeSpan DeviceRefreshInterval = TimeSpan.FromSeconds(5);
 
     private readonly MMDeviceEnumerator _enumerator = new();
