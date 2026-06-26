@@ -759,7 +759,7 @@ public partial class MainWindow : Window
     }
 
     private static double MapVisualizerLevel(double rawLevel, double volumeFactor) =>
-        Math.Clamp(rawLevel * volumeFactor * VisualizerDisplayGain, 0d, 1d);
+        Math.Min(rawLevel * VisualizerDisplayGain, 1d) * volumeFactor;
 
     private bool IsSliderMuted(Slider slider) =>
         _sliderMuteToggles.TryGetValue(slider, out var muteToggle) && muteToggle.IsChecked == true;
