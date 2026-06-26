@@ -12,6 +12,7 @@ public partial class App : Application
     private MainWindow? _mainWindow;
     private AppSettings? _settings;
     private MediaKeysOverrideService? _mediaKeysOverride;
+    private DiscordScreenshareEchoFixService? _discordScreenshareEchoFix;
     private VolumeOverlayService? _volumeOverlay;
     private SingleInstanceManager? _singleInstance;
 
@@ -35,7 +36,14 @@ public partial class App : Application
         _volumeOverlay = new VolumeOverlayService(() => _settings!.VolumeOverlayEnabled);
         _mediaKeysOverride = new MediaKeysOverrideService();
         _mediaKeysOverride.VolumeAdjusted += state => _volumeOverlay.Show(state);
-        _mainWindow = new MainWindow(_settings, _mediaKeysOverride, _volumeOverlay, ApplyTrayIcon);
+        _discordScreenshareEchoFix = new DiscordScreenshareEchoFixService();
+        _discordScreenshareEchoFix.SetEnabled(_settings.DiscordScreenshareEchoFix);
+        _mainWindow = new MainWindow(
+            _settings,
+            _mediaKeysOverride,
+            _discordScreenshareEchoFix,
+            _volumeOverlay,
+            ApplyTrayIcon);
         _ = new WindowInteropHelper(_mainWindow).EnsureHandle();
         _ = _mainWindow.WarmupAsync();
 
@@ -115,6 +123,9 @@ public partial class App : Application
 
         _mediaKeysOverride?.Dispose();
         _mediaKeysOverride = null;
+
+        _discordScreenshareEchoFix?.Dispose();
+        _discordScreenshareEchoFix = null;
 
         _volumeOverlay?.Dispose();
         _volumeOverlay = null;

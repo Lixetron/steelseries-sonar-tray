@@ -14,6 +14,8 @@ public sealed class SonarApiClient : IDisposable
     private const string StreamerStreamingPath = "streaming";
     private const string StreamRedirectionMonitoringId = "monitoring";
     private const string StreamRedirectionStreamingId = "streaming";
+    private const string MicrophoneStreamRole = "mic";
+    private const string MicrophoneStreamRoleAlt = "chatCapture";
 
     private static readonly string CorePropsPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
@@ -913,6 +915,512 @@ public sealed class SonarApiClient : IDisposable
         }
 
         return uri.IsDefaultPort ? null : uri.Port;
+    }
+
+    public async Task<SonarEchoFixRouting?> GetEchoFixRoutingAsync(CancellationToken cancellationToken = default)
+    {
+        if (!await EnsureConnectedAsync(cancellationToken).ConfigureAwait(false))
+        {
+            return null;
+        }
+
+        await RefreshModeAsync(cancellationToken).ConfigureAwait(false);
+
+        var microphoneStreamBroadcast = false;
+        string? monitoringDeviceId = null;
+        var monitoringEnabled = false;
+
+        using (var streamRedirections = await GetStreamRedirectionsDocumentAsync(cancellationToken)
+                   .ConfigureAwait(false))
+        {
+            if (streamRedirections is not null)
+            {
+                monitoringEnabled = TryGetMicrophoneMonitoringEnabled(streamRedirections.RootElement);
+
+                if (!monitoringEnabled)
+                {
+                    monitoringEnabled = TryResolveAudienceMonitoringEnabled(streamRedirections.RootElement);
+                }
+
+                microphoneStreamBroadcast = TryGetRedirectionRoleEnabled(
+                    streamRedirections.RootElement,
+                    StreamRedirectionStreamingId,
+                    MicrophoneStreamRole)
+                    || TryGetRedirectionRoleEnabled(
+                        streamRedirections.RootElement,
+                        StreamRedirectionStreamingId,
+                        MicrophoneStreamRoleAlt);
+
+                if (_streamerMode == true)
+                {
+                    monitoringDeviceId = TryReadRedirectionDeviceId(
+                        streamRedirections.RootElement,
+                        StreamRedirectionMonitoringId);
+                }
+            }
+        }
+
+        if (!monitoringEnabled)
+        {
+            monitoringEnabled = await GetStreamMonitoringEnabledAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        if (!monitoringEnabled)
+        {
+            monitoringEnabled = await TryGetStreamMonitoringFromFeaturesAsync(cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        if (_streamerMode != true)
+        {
+            monitoringDeviceId = await GetClassicRedirectionDeviceIdAsync("game", cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        return new SonarEchoFixRouting
+        {
+            IsStreamerMode = _streamerMode == true,
+            IsStreamMonitoringEnabled = monitoringEnabled,
+            IsMicrophoneStreamBroadcastEnabled = _streamerMode == true && microphoneStreamBroadcast,
+            MonitoringOutputDeviceId = monitoringDeviceId
+        };
+    }
+
+    private async Task<JsonDocument?> GetStreamRedirectionsDocumentAsync(CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(_webServerAddress))
+        {
+            return null;
+        }
+
+        try
+        {
+            using var response = await _httpClient
+                .GetAsync($"{_webServerAddress}/streamRedirections", cancellationToken)
+                .ConfigureAwait(false);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                return null;
+            }
+
+            await using var stream = await response.Content
+                .ReadAsStreamAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            return await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken)
+                .ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
+        {
+            return null;
+        }
+    }
+
+    private static bool TryGetRedirectionRoleEnabled(JsonElement root, string redirectionId, string role)
+    {
+        if (root.ValueKind != JsonValueKind.Array)
+        {
+            return false;
+        }
+
+        foreach (var redirection in root.EnumerateArray())
+        {
+            if (!redirection.TryGetProperty("streamRedirectionId", out var redirectionIdElement) ||
+                !string.Equals(redirectionIdElement.GetString(), redirectionId, StringComparison.OrdinalIgnoreCase) ||
+                !redirection.TryGetProperty("status", out var status))
+            {
+                continue;
+            }
+
+            foreach (var entry in status.EnumerateArray())
+            {
+                if (!entry.TryGetProperty("role", out var roleElement) ||
+                    !string.Equals(roleElement.GetString(), role, StringComparison.OrdinalIgnoreCase) ||
+                    !entry.TryGetProperty("isEnabled", out var enabledElement) ||
+                    enabledElement.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
+                {
+                    continue;
+                }
+
+                return enabledElement.GetBoolean();
+            }
+        }
+
+        return false;
+    }
+
+    private async Task<bool> GetStreamMonitoringEnabledAsync(CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(_webServerAddress))
+        {
+            return false;
+        }
+
+        try
+        {
+            using var response = await _httpClient
+                .GetAsync($"{_webServerAddress}/streamRedirections/isStreamMonitoringEnabled", cancellationToken)
+                .ConfigureAwait(false);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                return false;
+            }
+
+            var body = (await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false)).Trim();
+            if (TryParseBooleanLike(body, out var parsed))
+            {
+                return parsed;
+            }
+
+            using var document = JsonDocument.Parse(body);
+            return TryParseBooleanElement(document.RootElement);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
+        {
+            return false;
+        }
+    }
+
+    private async Task<bool> TryGetStreamMonitoringFromFeaturesAsync(CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(_webServerAddress))
+        {
+            return false;
+        }
+
+        try
+        {
+            using var response = await _httpClient
+                .GetAsync($"{_webServerAddress}/features", cancellationToken)
+                .ConfigureAwait(false);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                return false;
+            }
+
+            await using var stream = await response.Content
+                .ReadAsStreamAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken)
+                .ConfigureAwait(false);
+
+            return TryFindBooleanProperty(
+                document.RootElement,
+                out var enabled,
+                "isStreamMonitoringEnabled",
+                "streamMonitoringEnabled",
+                "isAudienceMonitoringEnabled",
+                "audienceMonitoringEnabled") && enabled;
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
+        {
+            return false;
+        }
+    }
+
+    private static bool TryGetMicrophoneMonitoringEnabled(JsonElement streamRedirectionsRoot) =>
+        TryGetRedirectionRoleEnabled(
+            streamRedirectionsRoot,
+            StreamRedirectionMonitoringId,
+            MicrophoneStreamRole)
+        || TryGetRedirectionRoleEnabled(
+            streamRedirectionsRoot,
+            StreamRedirectionMonitoringId,
+            MicrophoneStreamRoleAlt);
+
+    private static bool TryResolveAudienceMonitoringEnabled(JsonElement streamRedirectionsRoot) =>
+        TryFindBooleanProperty(
+            streamRedirectionsRoot,
+            out var enabled,
+            "isStreamMonitoringEnabled",
+            "streamMonitoringEnabled",
+            "isAudienceMonitoringEnabled",
+            "audienceMonitoringEnabled") && enabled;
+
+    private static bool TryFindBooleanProperty(JsonElement element, params string[] propertyNames) =>
+        TryFindBooleanProperty(element, out _, propertyNames);
+
+    private static bool TryFindBooleanProperty(
+        JsonElement element,
+        out bool enabled,
+        params string[] propertyNames)
+    {
+        enabled = false;
+        return TryFindBooleanProperty(element, propertyNames, depth: 0, out enabled);
+    }
+
+    private static bool TryFindBooleanProperty(JsonElement element, string[] propertyNames, int depth)
+    {
+        if (depth > 8)
+        {
+            return false;
+        }
+
+        if (element.ValueKind == JsonValueKind.Object)
+        {
+            foreach (var propertyName in propertyNames)
+            {
+                if (element.TryGetProperty(propertyName, out var flag) &&
+                    TryParseBooleanElement(flag, out var enabled))
+                {
+                    return enabled;
+                }
+            }
+
+            foreach (var property in element.EnumerateObject())
+            {
+                if (TryFindBooleanProperty(property.Value, propertyNames, depth + 1, out var enabled))
+                {
+                    return enabled;
+                }
+            }
+        }
+        else if (element.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var child in element.EnumerateArray())
+            {
+                if (TryFindBooleanProperty(child, propertyNames, depth + 1, out var enabled))
+                {
+                    return enabled;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private static bool TryFindBooleanProperty(
+        JsonElement element,
+        string[] propertyNames,
+        int depth,
+        out bool enabled)
+    {
+        enabled = false;
+
+        if (depth > 8)
+        {
+            return false;
+        }
+
+        if (element.ValueKind == JsonValueKind.Object)
+        {
+            foreach (var propertyName in propertyNames)
+            {
+                if (element.TryGetProperty(propertyName, out var flag) &&
+                    TryParseBooleanElement(flag, out enabled))
+                {
+                    return true;
+                }
+            }
+
+            foreach (var property in element.EnumerateObject())
+            {
+                if (TryFindBooleanProperty(property.Value, propertyNames, depth + 1, out enabled))
+                {
+                    return true;
+                }
+            }
+        }
+        else if (element.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var child in element.EnumerateArray())
+            {
+                if (TryFindBooleanProperty(child, propertyNames, depth + 1, out enabled))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private static bool TryParseBooleanLike(string value, out bool result)
+    {
+        result = false;
+
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        value = value.Trim().Trim('"');
+        if (bool.TryParse(value, out result))
+        {
+            return true;
+        }
+
+        if (int.TryParse(value, out var number))
+        {
+            result = number != 0;
+            return true;
+        }
+
+        return false;
+    }
+
+    private static bool TryParseBooleanElement(JsonElement element) =>
+        TryParseBooleanElement(element, out _);
+
+    private static bool TryParseBooleanElement(JsonElement element, out bool result)
+    {
+        result = false;
+
+        switch (element.ValueKind)
+        {
+            case JsonValueKind.True:
+                result = true;
+                return true;
+            case JsonValueKind.False:
+                return true;
+            case JsonValueKind.String:
+                return TryParseBooleanLike(element.GetString() ?? string.Empty, out result);
+            case JsonValueKind.Number:
+                result = element.TryGetInt32(out var number) ? number != 0 : Math.Abs(element.GetDouble()) > 0.0001d;
+                return true;
+            case JsonValueKind.Object:
+                if (element.TryGetProperty("value", out var value) && TryParseBooleanElement(value, out result))
+                {
+                    return true;
+                }
+
+                if (element.TryGetProperty("enabled", out var enabled) && TryParseBooleanElement(enabled, out result))
+                {
+                    return true;
+                }
+
+                if (element.TryGetProperty("isEnabled", out var isEnabled) &&
+                    TryParseBooleanElement(isEnabled, out result))
+                {
+                    return true;
+                }
+
+                break;
+        }
+
+        return false;
+    }
+
+    private async Task<string?> GetStreamRedirectionDeviceIdAsync(
+        string redirectionId,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(_webServerAddress))
+        {
+            return null;
+        }
+
+        try
+        {
+            using var response = await _httpClient
+                .GetAsync($"{_webServerAddress}/streamRedirections", cancellationToken)
+                .ConfigureAwait(false);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                return null;
+            }
+
+            await using var stream = await response.Content
+                .ReadAsStreamAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken)
+                .ConfigureAwait(false);
+
+            return TryReadRedirectionDeviceId(document.RootElement, redirectionId);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
+        {
+            return null;
+        }
+    }
+
+    private async Task<string?> GetClassicRedirectionDeviceIdAsync(
+        string channel,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(_webServerAddress))
+        {
+            return null;
+        }
+
+        try
+        {
+            using var response = await _httpClient
+                .GetAsync($"{_webServerAddress}/classicRedirections", cancellationToken)
+                .ConfigureAwait(false);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                return null;
+            }
+
+            await using var stream = await response.Content
+                .ReadAsStreamAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken)
+                .ConfigureAwait(false);
+
+            return TryReadClassicRedirectionDeviceId(document.RootElement, channel);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
+        {
+            return null;
+        }
+    }
+
+    private static string? TryReadRedirectionDeviceId(JsonElement root, string redirectionId)
+    {
+        if (root.ValueKind != JsonValueKind.Array)
+        {
+            return null;
+        }
+
+        foreach (var redirection in root.EnumerateArray())
+        {
+            if (!redirection.TryGetProperty("streamRedirectionId", out var idElement))
+            {
+                continue;
+            }
+
+            if (!string.Equals(idElement.GetString(), redirectionId, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            if (redirection.TryGetProperty("deviceId", out var deviceIdElement))
+            {
+                return deviceIdElement.GetString();
+            }
+        }
+
+        return null;
+    }
+
+    private static string? TryReadClassicRedirectionDeviceId(JsonElement root, string channel)
+    {
+        if (root.ValueKind != JsonValueKind.Object)
+        {
+            return null;
+        }
+
+        if (!root.TryGetProperty(channel, out var channelElement))
+        {
+            return null;
+        }
+
+        if (channelElement.TryGetProperty("deviceId", out var deviceIdElement))
+        {
+            return deviceIdElement.GetString();
+        }
+
+        return null;
     }
 
     public void Dispose() => _httpClient.Dispose();

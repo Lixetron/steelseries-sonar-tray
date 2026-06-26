@@ -36,6 +36,7 @@ public partial class MainWindow : Window
     private readonly SonarChannelLevelMonitor _levelMonitor = new();
     private readonly AppSettings _settings;
     private readonly MediaKeysOverrideService _mediaKeysOverride;
+    private readonly DiscordScreenshareEchoFixService _discordScreenshareEchoFix;
     private readonly VolumeOverlayService _volumeOverlay;
     private readonly Action _applyTrayIcon;
     private readonly DispatcherTimer _volumeThrottleTimer;
@@ -71,11 +72,13 @@ public partial class MainWindow : Window
     public MainWindow(
         AppSettings settings,
         MediaKeysOverrideService mediaKeysOverride,
+        DiscordScreenshareEchoFixService discordScreenshareEchoFix,
         VolumeOverlayService volumeOverlay,
         Action applyTrayIcon)
     {
         _settings = settings;
         _mediaKeysOverride = mediaKeysOverride;
+        _discordScreenshareEchoFix = discordScreenshareEchoFix;
         _volumeOverlay = volumeOverlay;
         _applyTrayIcon = applyTrayIcon;
         _mediaKeysOverride.MixerChanged += MediaKeysOverride_MixerChanged;
@@ -189,6 +192,7 @@ public partial class MainWindow : Window
         PopulateTrayIconStyleCombo();
         SelectTrayIconStyle(_settings.TrayIconStyle);
         ApplyMediaKeysOverrideSettings();
+        ApplyDiscordScreenshareEchoFixSettings();
         ApplyAudioVisualizerState();
 
         Closed += (_, _) =>
@@ -1510,16 +1514,19 @@ public partial class MainWindow : Window
 
         ApplyAudioVisualizerState();
         ApplyMediaKeysOverrideSettings();
+        ApplyDiscordScreenshareEchoFixSettings();
 
         if (!_settings.VolumeOverlayEnabled)
         {
             _volumeOverlay.HideImmediately();
         }
+    }
 
-        if (_settings.DiscordScreenshareEchoFix)
-        {
-            // Future: locate discord.exe render session and mute chatRender endpoint.
-        }
+    private void ApplyDiscordScreenshareEchoFixSettings()
+    {
+        var enabled = DiscordEchoFixToggle.IsChecked == true;
+        _settings.DiscordScreenshareEchoFix = enabled;
+        _discordScreenshareEchoFix.SetEnabled(enabled);
     }
 
     private bool ApplyRunAtWindowsStartupSetting()

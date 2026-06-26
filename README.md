@@ -42,7 +42,7 @@ SteelSeries Sonar is powerful, but day-to-day control has friction:
 | Windows media keys fight Sonar as the default audio device | **Media Keys Override** sends Volume Up/Down/Mute to a Sonar channel |
 | No clear feedback when Sonar handles volume | **Volume Overlay** shows channel name, level, and mute state |
 | Hard to see which channel is active while mixing | **Audio Visualizer** paints live levels on sliders (WASAPI peak meters) |
-| Discord screenshare echo with Sonar routing | **Discord Screenshare Echo Fix** *(planned)* |
+| Discord double audio with Sonar routing | **Discord Screenshare Echo Fix** — per-app mute for Discord on Sonar endpoints (mode-dependent; see [Discord Screenshare Echo Fix](#discord-screenshare-echo-fix)) |
 
 Sonar Quick Mixer is a **daily-driver layer on top of Sonar**, not a replacement for GG. Routing apps to channels, mic setup, spatial audio, and driver management still live in SteelSeries GG.
 
@@ -99,9 +99,32 @@ Optional live level meters on mixer sliders, read from Sonar virtual render devi
 
 ### Discord Screenshare Echo Fix
 
-> **Status: not implemented yet** — setting exists in UI and `settings.json` for forward compatibility.
+Prevents Discord audio loops by muting **only Discord** (`Discord`, `DiscordPTB`, `DiscordCanary`) via Windows per-app volume (`sndvol` / WASAPI `SimpleAudioVolume`) on specific endpoints. Sonar channel API is not used. Original per-session mute state is saved and restored when the option is turned off or routing changes.
 
-Planned behavior: detect Discord’s render audio session during screenshare and mute the **Chat** (`chatRender`) path to reduce echo loops common with Sonar virtual devices.
+The service polls every **2 seconds** and reads Sonar routing from `GET /mode` and `GET /streamRedirections`.
+
+| Sonar mode | Endpoint | When targeted |
+|------------|----------|---------------|
+| **Streamer** | **Sonar — Microphone** (playback / render, not capture) | Always watched |
+| **Streamer** | **Sonar — Stream** | Mic **broadcast** to stream mix is on (broadcast icon above mic; API: `streaming` → `chatCapture` / `mic` → `isEnabled`) |
+| **Streamer** | **Physical monitoring output** (headset/speakers from `monitoring.deviceId`) | **Self-monitoring** is on (headphones icon above mic; API: `monitoring` → `chatCapture` / `mic` → `isEnabled`) |
+| **Classic** | **Sonar — Microphone** (playback / render, not capture) | Always watched |
+
+Mute is applied only when Discord has an audio session on that endpoint. If Discord is not routed there, nothing changes.
+
+**Never muted:** Sonar Microphone **capture** (your mic input to Discord), Sonar Game/Chat/Media/Aux, other applications.
+
+#### Streamer mode (detail)
+
+**Sonar Mic render** — always watched in streamer mode.
+
+**Microphone broadcast** (broadcast icon above the mic) — also mutes Discord on **SteelSeries Sonar — Stream**.
+
+**Self-monitoring** (headphones icon above the mic) — also mutes Discord on your **physical monitoring output** (from Sonar’s `monitoring.deviceId`).
+
+#### Classic mode
+
+Mutes Discord on **SteelSeries Sonar — Microphone** playback (render only) when a Discord session is present on that endpoint.
 
 ---
 
@@ -177,7 +200,7 @@ Open **Settings** from the mixer and toggle:
 
 - **Media Keys Override** + **Target channel**
 - **Volume Overlay**
-- **Discord Screenshare Echo Fix** *(no effect until implemented)*
+- **Discord Screenshare Echo Fix** — on by default; mutes Discord on Sonar endpoints per mode (see [Discord Screenshare Echo Fix](#discord-screenshare-echo-fix))
 - **Audio Visualizer**
 - **Tray icon** — Auto, Accent, White, or Dark
 
@@ -200,7 +223,7 @@ Example:
   "MediaKeysOverride": true,
   "MediaKeysOverrideChannel": "master",
   "VolumeOverlayEnabled": true,
-  "DiscordScreenshareEchoFix": false,
+  "DiscordScreenshareEchoFix": true,
   "AudioVisualizerEnabled": true,
   "TrayIconStyle": 0
 }
@@ -211,7 +234,7 @@ Example:
 | `MediaKeysOverride` | `bool` | `false` | Intercept Volume Up/Down/Mute globally |
 | `MediaKeysOverrideChannel` | `string` | `"master"` | Target channel: `master`, `game`, `chatRender`, `media`, `aux` |
 | `VolumeOverlayEnabled` | `bool` | `true` | Show HUD after media-key volume changes |
-| `DiscordScreenshareEchoFix` | `bool` | `false` | Reserved for future Discord echo mitigation |
+| `DiscordScreenshareEchoFix` | `bool` | `true` | Streamer: always Sonar **Mic render**; + **Stream** when mic broadcast; + physical output when self-monitoring. Classic: Sonar Mic render |
 | `AudioVisualizerEnabled` | `bool` | `true` | Live level meters on mixer sliders |
 | `TrayIconStyle` | `int` (enum) | `0` | `0` Auto, `1` Accent, `2` White, `3` Dark |
 
@@ -248,6 +271,20 @@ Sonar is the source of truth. Another client (GG UI, game, hotkeys) may change v
 
 Optional Sonar channels appear only when enabled in Sonar **and** the corresponding virtual device is present in Windows sound settings.
 
+### Discord double audio / echo
+
+**Streamer mode**
+
+- Confirm **Discord Screenshare Echo Fix** is enabled (default).
+- **Sonar Mic render** is always watched; Discord is muted there only when it has a session on that endpoint.
+- **Sonar Stream:** enable **mic broadcast** (broadcast icon above mic).
+- **Physical output:** enable **self-monitoring** (headphones icon above mic).
+- In `sndvol`, check **Sonar — Microphone** (Playback), **Sonar — Stream**, and your physical headset/speakers as applicable.
+
+**Classic mode**
+
+- Discord is muted on **Sonar — Microphone** playback (render) only — not capture.
+
 ### Tray or app icon looks stale after a rebuild
 
 Windows caches process icons. Fully close the app and Task Manager, then restart the app. If Explorer or Task Manager still shows the old icon, restart Explorer (`taskkill /f /im explorer.exe` then `start explorer.exe`) or sign out and back in.
@@ -271,6 +308,7 @@ flowchart LR
     MW[MainWindow mixer UI]
     MKO[MediaKeysOverrideService]
     VO[VolumeOverlayService]
+    DEF[DiscordScreenshareEchoFixService]
     API[SonarApiClient]
   end
 
@@ -284,6 +322,8 @@ flowchart LR
   Keys --> MKO
   MKO --> API
   MKO --> VO
+  DEF --> API
+  DEF --> WASAPI
   API <-->|HTTP localhost| GG
   MW --> WASAPI
 ```
@@ -301,7 +341,12 @@ It supports **classic** and **streamer** volume API paths and refreshes streamer
 
 | File / area | Role |
 |-------------|------|
-| `SonarApiClient.cs` | HTTP client for mixer read/write |
+| `SonarApiClient.cs` | HTTP client for mixer read/write; `GetEchoFixRoutingAsync()` for echo-fix routing |
+| `DiscordScreenshareEchoFixService.cs` | Polls Sonar routing; per-app Discord mute on WASAPI endpoints |
+| `SonarEchoFixRouting.cs` | Streamer/classic flags: broadcast, self-monitoring, monitoring device ID |
+| `Audio/SonarVirtualMicrophoneRenderProbe.cs` | Locate Sonar Microphone **render** endpoint |
+| `Audio/SonarVirtualStreamProbe.cs` | Locate Sonar Stream endpoint |
+| `Audio/WindowsAudioDeviceProbe.cs` | Resolve physical output by Sonar `deviceId` |
 | `MainWindow.xaml(.cs)` | Tray popup UI, slider bindings, settings |
 | `MediaKeysOverrideService.cs` | Low-level keyboard hook (`WH_KEYBOARD_LL`) |
 | `VolumeOverlayService.cs` | Overlay lifecycle and debounced hide |
@@ -361,10 +406,12 @@ steelseries-sonar-tray/          # repository root (GitHub name unchanged)
 │   ├── App.xaml(.cs)              # Tray icon, app lifetime
 │   ├── MainWindow.xaml(.cs)       # Mixer + settings UI
 │   ├── SonarApiClient.cs          # Sonar HTTP API
+│   ├── SonarEchoFixRouting.cs     # Echo-fix routing model
 │   ├── MediaKeysOverrideService.cs
+│   ├── DiscordScreenshareEchoFixService.cs
 │   ├── TrayIconProvider.cs        # Tray icon styles + theme auto
 │   ├── VolumeOverlay*.cs          # Overlay window + service
-│   ├── Audio/                     # WASAPI level monitoring
+│   ├── Audio/                     # WASAPI probes (Sonar Stream/Mic render, physical device)
 │   ├── Assets/                    # Icons
 │   │   ├── app.ico / app-icon.png # Executable icon (Task Manager, Explorer)
 │   │   ├── tray-accent.*          # Cyan tray glyph
@@ -401,7 +448,7 @@ Commit both the script output (`*.ico`, `*.png`) and any script changes. The bui
 
 Planned or discussed enhancements:
 
-- [ ] **Discord Screenshare Echo Fix** — automatic `chatRender` session handling for Discord
+- [x] **Discord Screenshare Echo Fix** — streamer mode (broadcast / self-monitoring) + classic (Sonar Mic render)
 - [ ] **Custom hotkeys per channel** — user-defined bindings instead of only media keys
 - [ ] **Physical device support** — Stream Deck, MIDI/HID knobs, custom mix controllers
 - [ ] **Volume overlay on all volume changes** — requires polling or push from Sonar (not available today)
@@ -411,7 +458,7 @@ Planned or discussed enhancements:
 
 ## Limitations
 
-**In scope:** fast mixer access, media key redirection, overlay, visualizer, customizable tray icon, future Discord workaround.
+**In scope:** fast mixer access, media key redirection, overlay, visualizer, customizable tray icon, Discord echo fix (per-app mute on Sonar Stream / Mic render / physical monitoring output).
 
 **Out of scope:**
 

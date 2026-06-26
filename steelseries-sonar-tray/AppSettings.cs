@@ -15,7 +15,7 @@ public sealed class AppSettings
     public bool MediaKeysOverride { get; set; }
     public string MediaKeysOverrideChannel { get; set; } = "master";
     public bool VolumeOverlayEnabled { get; set; } = true;
-    public bool DiscordScreenshareEchoFix { get; set; }
+    public bool DiscordScreenshareEchoFix { get; set; } = true;
     public bool AudioVisualizerEnabled { get; set; } = true;
     public TrayIconStyle TrayIconStyle { get; set; } = TrayIconStyle.Auto;
 
