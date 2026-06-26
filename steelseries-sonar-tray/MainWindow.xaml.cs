@@ -82,7 +82,7 @@ public partial class MainWindow : Window
             MasterStreamMuteToggle,
             MasterStreamSlider,
             MasterStreamValueText,
-            MasterMonitorCaption,
+            MasterMonitorMixIcon,
             MasterStreamRow);
 
         RegisterChannel(
@@ -93,7 +93,7 @@ public partial class MainWindow : Window
             GameStreamMuteToggle,
             GameStreamSlider,
             GameStreamValueText,
-            GameMonitorCaption,
+            null,
             GameStreamRow,
             GameMonitorMixToggle,
             GameStreamMixToggle);
@@ -106,7 +106,7 @@ public partial class MainWindow : Window
             ChatStreamMuteToggle,
             ChatStreamSlider,
             ChatStreamValueText,
-            ChatMonitorCaption,
+            null,
             ChatStreamRow,
             ChatMonitorMixToggle,
             ChatStreamMixToggle);
@@ -119,7 +119,7 @@ public partial class MainWindow : Window
             MediaStreamMuteToggle,
             MediaStreamSlider,
             MediaStreamValueText,
-            MediaMonitorCaption,
+            null,
             MediaStreamRow,
             MediaMonitorMixToggle,
             MediaStreamMixToggle);
@@ -132,7 +132,7 @@ public partial class MainWindow : Window
             AuxStreamMuteToggle,
             AuxStreamSlider,
             AuxStreamValueText,
-            AuxMonitorCaption,
+            null,
             AuxStreamRow,
             AuxMonitorMixToggle,
             AuxStreamMixToggle);
@@ -208,14 +208,18 @@ public partial class MainWindow : Window
         ToggleButton streamMuteToggle,
         Slider streamSlider,
         TextBlock streamValueLabel,
-        FrameworkElement monitorCaption,
+        FrameworkElement? streamerMonitorIndicator,
         FrameworkElement streamRow,
         ToggleButton? monitorMixToggle = null,
         ToggleButton? streamMixToggle = null)
     {
         RegisterMixerRow(channel, SonarMixerPath.Monitoring, monitorMuteToggle, monitorSlider, monitorValueLabel, monitorMixToggle);
         RegisterMixerRow(channel, SonarMixerPath.Streaming, streamMuteToggle, streamSlider, streamValueLabel, streamMixToggle);
-        _streamerOnlyElements.Add(monitorCaption);
+        if (streamerMonitorIndicator is not null)
+        {
+            _streamerOnlyElements.Add(streamerMonitorIndicator);
+        }
+
         _streamerOnlyElements.Add(streamRow);
     }
 

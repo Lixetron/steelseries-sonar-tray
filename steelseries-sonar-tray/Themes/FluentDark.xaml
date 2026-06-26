@@ -34,13 +34,6 @@
         <Setter Property="MinWidth" Value="36"/>
     </Style>
 
-    <Style x:Key="MixerSubLabelStyle" TargetType="TextBlock">
-        <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
-        <Setter Property="FontSize" Value="11"/>
-        <Setter Property="VerticalAlignment" Value="Center"/>
-        <Setter Property="Opacity" Value="0.85"/>
-    </Style>
-
     <Style x:Key="HeaderIconButtonStyle" TargetType="Button">
         <Setter Property="Width" Value="28"/>
         <Setter Property="Height" Value="28"/>
@@ -132,6 +125,35 @@
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
+    </Style>
+
+    <Style x:Key="MixerMonitorMixIconStyle" TargetType="Border">
+        <Setter Property="Width" Value="24"/>
+        <Setter Property="Height" Value="24"/>
+        <Setter Property="Margin" Value="0,0,6,0"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="IsHitTestVisible" Value="False"/>
+        <Setter Property="ToolTip" Value="Personal mix (headphones)"/>
+    </Style>
+
+    <Style x:Key="MixerStreamMixIconStyle" TargetType="Border">
+        <Setter Property="Width" Value="24"/>
+        <Setter Property="Height" Value="24"/>
+        <Setter Property="Margin" Value="0,0,6,0"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="IsHitTestVisible" Value="False"/>
+        <Setter Property="ToolTip" Value="Stream mix (broadcast)"/>
+    </Style>
+
+    <Style x:Key="MixerMixIconGlyphStyle" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
+        <Setter Property="FontSize" Value="11"/>
+        <Setter Property="HorizontalAlignment" Value="Center"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
     </Style>
 
     <Style x:Key="ChannelMonitorMixToggleStyle" TargetType="ToggleButton">

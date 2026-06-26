@@ -100,15 +100,18 @@
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
+                            <Border x:Name="MasterMonitorMixIcon"
+                                    Grid.Column="0"
+                                    Style="{StaticResource MixerMonitorMixIconStyle}"
+                                    Visibility="Collapsed">
+                                <TextBlock Text="&#xE7F6;"
+                                           Foreground="{StaticResource AccentBrush}"
+                                           Style="{StaticResource MixerMixIconGlyphStyle}"/>
+                            </Border>
                             <ToggleButton x:Name="MasterMonitorMuteToggle"
-                                          Grid.Column="0"
+                                          Grid.Column="1"
                                           Style="{StaticResource ChannelMuteToggleStyle}"
                                           Click="MuteToggle_Click"/>
-                            <TextBlock x:Name="MasterMonitorCaption"
-                                       Grid.Column="1"
-                                       Text="Monitor"
-                                       Style="{StaticResource MixerSubLabelStyle}"
-                                       Visibility="Collapsed"/>
                             <Slider x:Name="MasterMonitorSlider"
                                     Grid.Column="2"
                                     Style="{StaticResource FluentSliderStyle}"
@@ -124,11 +127,17 @@
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
+                            <Border x:Name="MasterStreamMixIcon"
+                                    Grid.Column="0"
+                                    Style="{StaticResource MixerStreamMixIconStyle}">
+                                <TextBlock Text="&#xE93E;"
+                                           Foreground="{StaticResource StreamAccentBrush}"
+                                           Style="{StaticResource MixerMixIconGlyphStyle}"/>
+                            </Border>
                             <ToggleButton x:Name="MasterStreamMuteToggle"
-                                          Grid.Column="0"
+                                          Grid.Column="1"
                                           Style="{StaticResource ChannelMuteToggleStyle}"
                                           Click="MuteToggle_Click"/>
-                            <TextBlock Grid.Column="1" Text="Stream" Style="{StaticResource MixerSubLabelStyle}"/>
                             <Slider x:Name="MasterStreamSlider"
                                     Grid.Column="2"
                                     Style="{StaticResource FluentStreamSliderStyle}"
@@ -148,7 +157,6 @@
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
@@ -162,22 +170,16 @@
                                           Grid.Column="1"
                                           Style="{StaticResource ChannelMuteToggleStyle}"
                                           Click="MuteToggle_Click"/>
-                            <TextBlock x:Name="GameMonitorCaption"
-                                       Grid.Column="2"
-                                       Text="Monitor"
-                                       Style="{StaticResource MixerSubLabelStyle}"
-                                       Visibility="Collapsed"/>
                             <Slider x:Name="GameMonitorSlider"
-                                    Grid.Column="3"
+                                    Grid.Column="2"
                                     Style="{StaticResource FluentSliderStyle}"
                                     ValueChanged="ChannelSlider_ValueChanged"/>
                             <TextBlock x:Name="GameMonitorValueText"
-                                       Grid.Column="4"
+                                       Grid.Column="3"
                                        Style="{StaticResource MixerValueStyle}"/>
                         </Grid>
                         <Grid x:Name="GameStreamRow" Margin="0,2,0,0" Visibility="Collapsed">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
@@ -193,13 +195,12 @@
                                           Grid.Column="1"
                                           Style="{StaticResource ChannelMuteToggleStyle}"
                                           Click="MuteToggle_Click"/>
-                            <TextBlock Grid.Column="2" Text="Stream" Style="{StaticResource MixerSubLabelStyle}"/>
                             <Slider x:Name="GameStreamSlider"
-                                    Grid.Column="3"
+                                    Grid.Column="2"
                                     Style="{StaticResource FluentStreamSliderStyle}"
                                     ValueChanged="ChannelSlider_ValueChanged"/>
                             <TextBlock x:Name="GameStreamValueText"
-                                       Grid.Column="4"
+                                       Grid.Column="3"
                                        Style="{StaticResource MixerValueStyle}"/>
                         </Grid>
                     </StackPanel>
@@ -211,7 +212,6 @@
                                    FontWeight="SemiBold"/>
                         <Grid Margin="0,4,0,0">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
@@ -227,22 +227,16 @@
                                           Grid.Column="1"
                                           Style="{StaticResource ChannelMuteToggleStyle}"
                                           Click="MuteToggle_Click"/>
-                            <TextBlock x:Name="ChatMonitorCaption"
-                                       Grid.Column="2"
-                                       Text="Monitor"
-                                       Style="{StaticResource MixerSubLabelStyle}"
-                                       Visibility="Collapsed"/>
                             <Slider x:Name="ChatMonitorSlider"
-                                    Grid.Column="3"
+                                    Grid.Column="2"
                                     Style="{StaticResource FluentSliderStyle}"
                                     ValueChanged="ChannelSlider_ValueChanged"/>
                             <TextBlock x:Name="ChatMonitorValueText"
-                                       Grid.Column="4"
+                                       Grid.Column="3"
                                        Style="{StaticResource MixerValueStyle}"/>
                         </Grid>
                         <Grid x:Name="ChatStreamRow" Margin="0,2,0,0" Visibility="Collapsed">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
@@ -258,13 +252,12 @@
                                           Grid.Column="1"
                                           Style="{StaticResource ChannelMuteToggleStyle}"
                                           Click="MuteToggle_Click"/>
-                            <TextBlock Grid.Column="2" Text="Stream" Style="{StaticResource MixerSubLabelStyle}"/>
                             <Slider x:Name="ChatStreamSlider"
-                                    Grid.Column="3"
+                                    Grid.Column="2"
                                     Style="{StaticResource FluentStreamSliderStyle}"
                                     ValueChanged="ChannelSlider_ValueChanged"/>
                             <TextBlock x:Name="ChatStreamValueText"
-                                       Grid.Column="4"
+                                       Grid.Column="3"
                                        Style="{StaticResource MixerValueStyle}"/>
                         </Grid>
                     </StackPanel>
@@ -276,7 +269,6 @@
                                    FontWeight="SemiBold"/>
                         <Grid Margin="0,4,0,0">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
@@ -292,22 +284,16 @@
                                           Grid.Column="1"
                                           Style="{StaticResource ChannelMuteToggleStyle}"
                                           Click="MuteToggle_Click"/>
-                            <TextBlock x:Name="MediaMonitorCaption"
-                                       Grid.Column="2"
-                                       Text="Monitor"
-                                       Style="{StaticResource MixerSubLabelStyle}"
-                                       Visibility="Collapsed"/>
                             <Slider x:Name="MediaMonitorSlider"
-                                    Grid.Column="3"
+                                    Grid.Column="2"
                                     Style="{StaticResource FluentSliderStyle}"
                                     ValueChanged="ChannelSlider_ValueChanged"/>
                             <TextBlock x:Name="MediaMonitorValueText"
-                                       Grid.Column="4"
+                                       Grid.Column="3"
                                        Style="{StaticResource MixerValueStyle}"/>
                         </Grid>
                         <Grid x:Name="MediaStreamRow" Margin="0,2,0,0" Visibility="Collapsed">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
@@ -323,13 +309,12 @@
                                           Grid.Column="1"
                                           Style="{StaticResource ChannelMuteToggleStyle}"
                                           Click="MuteToggle_Click"/>
-                            <TextBlock Grid.Column="2" Text="Stream" Style="{StaticResource MixerSubLabelStyle}"/>
                             <Slider x:Name="MediaStreamSlider"
-                                    Grid.Column="3"
+                                    Grid.Column="2"
                                     Style="{StaticResource FluentStreamSliderStyle}"
                                     ValueChanged="ChannelSlider_ValueChanged"/>
                             <TextBlock x:Name="MediaStreamValueText"
-                                       Grid.Column="4"
+                                       Grid.Column="3"
                                        Style="{StaticResource MixerValueStyle}"/>
                         </Grid>
                     </StackPanel>
@@ -341,7 +326,6 @@
                                    FontWeight="SemiBold"/>
                         <Grid Margin="0,4,0,0">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
@@ -357,22 +341,16 @@
                                           Grid.Column="1"
                                           Style="{StaticResource ChannelMuteToggleStyle}"
                                           Click="MuteToggle_Click"/>
-                            <TextBlock x:Name="AuxMonitorCaption"
-                                       Grid.Column="2"
-                                       Text="Monitor"
-                                       Style="{StaticResource MixerSubLabelStyle}"
-                                       Visibility="Collapsed"/>
                             <Slider x:Name="AuxMonitorSlider"
-                                    Grid.Column="3"
+                                    Grid.Column="2"
                                     Style="{StaticResource FluentSliderStyle}"
                                     ValueChanged="ChannelSlider_ValueChanged"/>
                             <TextBlock x:Name="AuxMonitorValueText"
-                                       Grid.Column="4"
+                                       Grid.Column="3"
                                        Style="{StaticResource MixerValueStyle}"/>
                         </Grid>
                         <Grid x:Name="AuxStreamRow" Margin="0,2,0,0" Visibility="Collapsed">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
@@ -388,13 +366,12 @@
                                           Grid.Column="1"
                                           Style="{StaticResource ChannelMuteToggleStyle}"
                                           Click="MuteToggle_Click"/>
-                            <TextBlock Grid.Column="2" Text="Stream" Style="{StaticResource MixerSubLabelStyle}"/>
                             <Slider x:Name="AuxStreamSlider"
-                                    Grid.Column="3"
+                                    Grid.Column="2"
                                     Style="{StaticResource FluentStreamSliderStyle}"
                                     ValueChanged="ChannelSlider_ValueChanged"/>
                             <TextBlock x:Name="AuxStreamValueText"
-                                       Grid.Column="4"
+                                       Grid.Column="3"
                                        Style="{StaticResource MixerValueStyle}"/>
                         </Grid>
                     </StackPanel>
