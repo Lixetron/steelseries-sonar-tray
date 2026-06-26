@@ -13,9 +13,20 @@ public partial class App : Application
     private AppSettings? _settings;
     private MediaKeysOverrideService? _mediaKeysOverride;
     private VolumeOverlayService? _volumeOverlay;
+    private SingleInstanceManager? _singleInstance;
 
     protected override void OnStartup(StartupEventArgs e)
     {
+        _singleInstance = new SingleInstanceManager();
+        if (!_singleInstance.TryAcquireOwnership())
+        {
+            _singleInstance.NotifyExistingInstance();
+            _singleInstance.Dispose();
+            _singleInstance = null;
+            Shutdown();
+            return;
+        }
+
         base.OnStartup(e);
 
         _settings = AppSettings.Load();
@@ -40,6 +51,8 @@ public partial class App : Application
         contextMenu.Items.Add("Open Mixer", null, (_, _) => ShowMixer());
         contextMenu.Items.Add("Exit", null, (_, _) => ShutdownApplication());
         _notifyIcon.ContextMenuStrip = contextMenu;
+
+        _singleInstance.StartListening(() => ShowMixer());
     }
 
     internal void ApplyTrayIcon()
@@ -104,6 +117,9 @@ public partial class App : Application
 
         _volumeOverlay?.Dispose();
         _volumeOverlay = null;
+
+        _singleInstance?.Dispose();
+        _singleInstance = null;
 
         base.OnExit(e);
     }
