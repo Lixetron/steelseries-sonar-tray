@@ -381,6 +381,12 @@
                                FontSize="12"
                                FontWeight="SemiBold"
                                Margin="0,0,0,10"/>
+                    <CheckBox x:Name="RunAtWindowsStartupToggle"
+                              Content="Start with Windows"
+                              Style="{StaticResource FluentToggleStyle}"
+                              Margin="0,0,0,10"
+                              Checked="FeatureToggle_Changed"
+                              Unchecked="FeatureToggle_Changed"/>
                     <CheckBox x:Name="MediaKeysOverrideToggle"
                               Content="Media Keys Override"
                               Style="{StaticResource FluentToggleStyle}"

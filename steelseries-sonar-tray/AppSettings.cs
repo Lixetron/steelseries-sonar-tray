@@ -11,6 +11,7 @@ public sealed class AppSettings
         "SonarTray",
         "settings.json");
 
+    public bool RunAtWindowsStartup { get; set; }
     public bool MediaKeysOverride { get; set; }
     public string MediaKeysOverrideChannel { get; set; } = "master";
     public bool VolumeOverlayEnabled { get; set; } = true;

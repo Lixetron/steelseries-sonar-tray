@@ -173,6 +173,7 @@ public partial class MainWindow : Window
         _suppressFeatureToggleChanges = true;
         try
         {
+            RunAtWindowsStartupToggle.IsChecked = _settings.RunAtWindowsStartup;
             MediaKeysOverrideToggle.IsChecked = _settings.MediaKeysOverride;
             VolumeOverlayToggle.IsChecked = _settings.VolumeOverlayEnabled;
             DiscordEchoFixToggle.IsChecked = _settings.DiscordScreenshareEchoFix;
@@ -1499,6 +1500,11 @@ public partial class MainWindow : Window
             return;
         }
 
+        if (sender == RunAtWindowsStartupToggle && !ApplyRunAtWindowsStartupSetting())
+        {
+            return;
+        }
+
         SyncFeatureSettingsFromUi();
         _settings.Save();
 
@@ -1516,8 +1522,31 @@ public partial class MainWindow : Window
         }
     }
 
+    private bool ApplyRunAtWindowsStartupSetting()
+    {
+        var enabled = RunAtWindowsStartupToggle.IsChecked == true;
+        if (WindowsStartupRegistration.TrySetEnabled(enabled))
+        {
+            _settings.RunAtWindowsStartup = enabled;
+            return true;
+        }
+
+        _suppressFeatureToggleChanges = true;
+        try
+        {
+            RunAtWindowsStartupToggle.IsChecked = _settings.RunAtWindowsStartup;
+        }
+        finally
+        {
+            _suppressFeatureToggleChanges = false;
+        }
+
+        return false;
+    }
+
     private void SyncFeatureSettingsFromUi()
     {
+        _settings.RunAtWindowsStartup = RunAtWindowsStartupToggle.IsChecked == true;
         _settings.MediaKeysOverride = MediaKeysOverrideToggle.IsChecked == true;
         _settings.VolumeOverlayEnabled = VolumeOverlayToggle.IsChecked == true;
         _settings.DiscordScreenshareEchoFix = DiscordEchoFixToggle.IsChecked == true;

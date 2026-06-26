@@ -30,6 +30,7 @@ public partial class App : Application
         base.OnStartup(e);
 
         _settings = AppSettings.Load();
+        WindowsStartupRegistration.Apply(_settings.RunAtWindowsStartup);
 
         _volumeOverlay = new VolumeOverlayService(() => _settings!.VolumeOverlayEnabled);
         _mediaKeysOverride = new MediaKeysOverrideService();
