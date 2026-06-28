@@ -46,9 +46,9 @@ jobs:
             | `SonarQuickMixer-*-single.exe` | **Recommended** — one self-contained file, no separate .NET install (~155 MB) |
             | `SonarQuickMixer-*-win-x64.zip` | Smaller download — extract and run `SonarQuickMixer.exe`; requires [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0) |
 
-            See the [README](https://github.com/${{ github.repository }}/blob/master/README.md#installation) for installation and first-run setup.
+            See the [user guide](https://github.com/${{ github.repository }}/blob/master/docs/user-guide.md#installation) for installation and first-run setup.
 
-            **Autostart:** open the mixer → **Settings** → enable **Start with Windows** ([details](https://github.com/${{ github.repository }}/blob/master/README.md#autostart-optional)).
+            **Autostart:** open the mixer → **Settings** → enable **Start with Windows** ([details](https://github.com/${{ github.repository }}/blob/master/docs/user-guide.md#autostart-optional)).
           files: |
             SonarQuickMixer-${{ github.ref_name }}-single.exe
             SonarQuickMixer-${{ github.ref_name }}-win-x64.zip
