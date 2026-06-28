@@ -56,6 +56,7 @@ Sonar Quick Mixer is a **daily-driver layer on top of Sonar**, not a replacement
 - Per-channel **mute** and **volume** sliders
 - **Streamer mode** support: separate **Monitor** and **Stream** mixes, plus per-channel stream routing toggles
 - Anchors near the tray icon; closes when focus leaves the window
+- Smooth inertial scrolling in mixer and settings lists
 - Status line shows connection state, streamer mode, enabled channels, and API port
 - Mixer state syncs from Sonar while the window is open
 
@@ -176,12 +177,15 @@ dotnet run --project steelseries-sonar-tray/steelseries-sonar-tray.csproj
 
 ### Autostart (optional)
 
-Windows does not configure this automatically. To start with Windows:
-
-1. Press `Win+R`, type `shell:startup`, press Enter.
-2. Create a shortcut to `SonarQuickMixer.exe` in that folder.
+Enable **Start with Windows** in **Settings**. The app registers itself in the current-user Run key (`HKCU\Software\Microsoft\Windows\CurrentVersion\Run`) and removes the entry when you turn the option off.
 
 Ensure SteelSeries GG (or at least Sonar) also starts before or with the tray app.
+
+<details>
+<summary>Manual startup folder (alternative)</summary>
+
+You can also place a shortcut to `SonarQuickMixer.exe` in the Windows Startup folder (`Win+R` → `shell:startup`). The in-app toggle and a manual shortcut are independent — prefer the Settings toggle for a clean uninstall path.
+</details>
 
 ---
 
@@ -194,6 +198,7 @@ Ensure SteelSeries GG (or at least Sonar) also starts before or with the tray ap
 | **Left-click** tray icon | Open mixer anchored near the cursor |
 | **Right-click** tray icon → **Open Mixer** | Same |
 | **Right-click** → **Exit** | Quit the application |
+| **Launch again** while already running | Brings the existing instance to the front (single-instance app) |
 
 Click the gear icon (**Settings**) in the mixer header to switch views. Click **Back** or click outside the window to return / close.
 
@@ -207,13 +212,14 @@ Click the gear icon (**Settings**) in the mixer header to switch views. Click **
 
 Open **Settings** from the mixer and toggle:
 
+- **Start with Windows** — register autostart in the current-user Run key (off by default)
 - **Media Keys Override** + **Target channel**
 - **Volume Overlay**
-- **Discord Screenshare Echo Fix** — on by default; mutes Discord on Sonar endpoints per mode (see [Discord Screenshare Echo Fix](#discord-screenshare-echo-fix))
+- **Discord Screenshare Echo Fix** — off by default; enable if you need per-mode Discord mute on Sonar endpoints (see [Discord Screenshare Echo Fix](#discord-screenshare-echo-fix))
 - **Audio Visualizer**
 - **Tray icon** — Auto, Accent, White, or Dark
 
-Settings persist immediately to disk. Tray icon changes apply without restarting the app.
+Settings are written to disk when you change a toggle (or when you close the mixer). On first run, `settings.json` is created on the first save. Tray icon changes apply without restarting the app.
 
 ---
 
@@ -229,10 +235,11 @@ Example:
 
 ```json
 {
-  "MediaKeysOverride": true,
+  "RunAtWindowsStartup": false,
+  "MediaKeysOverride": false,
   "MediaKeysOverrideChannel": "master",
   "VolumeOverlayEnabled": true,
-  "DiscordScreenshareEchoFix": true,
+  "DiscordScreenshareEchoFix": false,
   "AudioVisualizerEnabled": true,
   "TrayIconStyle": 0
 }
@@ -240,10 +247,11 @@ Example:
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
+| `RunAtWindowsStartup` | `bool` | `false` | Add/remove autostart entry in `HKCU\...\Run` |
 | `MediaKeysOverride` | `bool` | `false` | Intercept Volume Up/Down/Mute globally |
 | `MediaKeysOverrideChannel` | `string` | `"master"` | Target channel: `master`, `game`, `chatRender`, `media`, `aux` |
 | `VolumeOverlayEnabled` | `bool` | `true` | Show HUD after media-key volume changes |
-| `DiscordScreenshareEchoFix` | `bool` | `true` | Streamer: always Sonar **Mic render**; + **Stream** when mic broadcast; + physical output when self-monitoring. Classic: Sonar Mic render |
+| `DiscordScreenshareEchoFix` | `bool` | `false` | Streamer: always Sonar **Mic render**; + **Stream** when mic broadcast; + physical output when self-monitoring. Classic: Sonar Mic render |
 | `AudioVisualizerEnabled` | `bool` | `true` | Live level meters on mixer sliders |
 | `TrayIconStyle` | `int` (enum) | `0` | `0` Auto, `1` Accent, `2` White, `3` Dark |
 
@@ -284,7 +292,7 @@ Optional Sonar channels appear only when enabled in Sonar **and** the correspond
 
 **Streamer mode**
 
-- Confirm **Discord Screenshare Echo Fix** is enabled (default).
+- Enable **Discord Screenshare Echo Fix** in Settings if you use Sonar streamer routing and hear double Discord audio.
 - **Sonar Mic render** is always watched; Discord is muted there only when it has a session on that endpoint.
 - **Sonar Stream:** enable **mic broadcast** (broadcast icon above mic).
 - **Physical output:** enable **self-monitoring** (headphones icon above mic).
@@ -318,6 +326,7 @@ flowchart LR
     MKO[MediaKeysOverrideService]
     VO[VolumeOverlayService]
     DEF[DiscordScreenshareEchoFixService]
+    SI[SingleInstanceManager]
     API[SonarApiClient]
   end
 
@@ -333,6 +342,7 @@ flowchart LR
   MKO --> VO
   DEF --> API
   DEF --> WASAPI
+  SI --> MW
   API <-->|HTTP localhost| GG
   MW --> WASAPI
 ```
@@ -341,8 +351,8 @@ flowchart LR
 
 `SonarApiClient` resolves Sonar’s web server address from:
 
-1. `%ProgramData%\SteelSeries\SteelSeries Engine 3\coreProps.json` → GG encrypted address → `/subApps`
-2. Fallback local config under SteelSeries GG app data
+1. `%ProgramData%\SteelSeries\SteelSeries Engine 3\coreProps.json` → `ggEncryptedAddress` → HTTPS GG API → `GET /subApps`
+2. Fallback: `%ProgramData%\SteelSeries\SteelSeries GG\subApps.json` (local `subApps.sonar.webServerAddress`)
 
 It supports **classic** and **streamer** volume API paths and refreshes streamer mode on demand.
 
@@ -351,16 +361,24 @@ It supports **classic** and **streamer** volume API paths and refreshes streamer
 | File / area | Role |
 |-------------|------|
 | `SonarApiClient.cs` | HTTP client for mixer read/write; `GetEchoFixRoutingAsync()` for echo-fix routing |
+| `SonarMixerSnapshot.cs` | Mixer state model; `SonarChannels` channel IDs and display names |
+| `SonarMixerPath.cs` | Classic vs streamer API path helpers |
 | `DiscordScreenshareEchoFixService.cs` | Polls Sonar routing; per-app Discord mute on WASAPI endpoints |
 | `SonarEchoFixRouting.cs` | Streamer/classic flags: broadcast, self-monitoring, monitoring device ID |
 | `Audio/SonarVirtualMicrophoneRenderProbe.cs` | Locate Sonar Microphone **render** endpoint |
 | `Audio/SonarVirtualStreamProbe.cs` | Locate Sonar Stream endpoint |
+| `Audio/SonarVirtualChannelProbe.cs` | Shared WASAPI device lookup for Sonar virtual channels |
 | `Audio/WindowsAudioDeviceProbe.cs` | Resolve physical output by Sonar `deviceId` |
+| `Audio/SonarChannelLevelMonitor.cs` | WASAPI peak polling for visualizer |
 | `MainWindow.xaml(.cs)` | Tray popup UI, slider bindings, settings |
+| `TrayWindowPlacement.cs` | Anchor mixer near tray / cursor |
+| `Controls/SmoothScrolling.cs` | Inertial scroll for mixer and settings `ScrollViewer`s |
+| `Controls/SliderLevelProperties.cs` | Attached properties for visualizer level bars on sliders |
 | `MediaKeysOverrideService.cs` | Low-level keyboard hook (`WH_KEYBOARD_LL`) |
 | `VolumeOverlayService.cs` | Overlay lifecycle and debounced hide |
 | `VolumeNotificationGuard.cs` | Fullscreen / focus-aware overlay suppression |
-| `Audio/SonarChannelLevelMonitor.cs` | WASAPI peak polling for visualizer |
+| `SingleInstanceManager.cs` | Mutex + named pipe; second launch focuses existing mixer |
+| `WindowsStartupRegistration.cs` | `HKCU\...\Run` autostart registration |
 | `TrayIconProvider.cs` | Tray icon loading and Windows theme detection |
 | `AppSettings.cs` | JSON settings load/save |
 | `Assets/` | App and tray icons (`.ico` / `.png`) |
@@ -424,15 +442,21 @@ steelseries-sonar-tray/          # repository root (GitHub name unchanged)
 ├── steelseries-sonar-tray.sln
 ├── steelseries-sonar-tray/        # .NET project folder
 │   ├── steelseries-sonar-tray.csproj   # builds SonarQuickMixer.exe
-│   ├── App.xaml(.cs)              # Tray icon, app lifetime
+│   ├── App.xaml(.cs)              # Tray icon, app lifetime, single instance
 │   ├── MainWindow.xaml(.cs)       # Mixer + settings UI
 │   ├── SonarApiClient.cs          # Sonar HTTP API
+│   ├── SonarMixerSnapshot.cs      # Mixer snapshot + SonarChannels
+│   ├── SonarMixerPath.cs
 │   ├── SonarEchoFixRouting.cs     # Echo-fix routing model
 │   ├── MediaKeysOverrideService.cs
 │   ├── DiscordScreenshareEchoFixService.cs
+│   ├── SingleInstanceManager.cs
+│   ├── WindowsStartupRegistration.cs
 │   ├── TrayIconProvider.cs        # Tray icon styles + theme auto
+│   ├── TrayWindowPlacement.cs
 │   ├── VolumeOverlay*.cs          # Overlay window + service
-│   ├── Audio/                     # WASAPI probes (Sonar Stream/Mic render, physical device)
+│   ├── Controls/                  # SmoothScrolling, slider level meters
+│   ├── Audio/                     # WASAPI probes + channel level monitor
 │   ├── Assets/                    # Icons
 │   │   ├── app.ico / app-icon.png # Executable icon (Task Manager, Explorer)
 │   │   ├── tray-accent.*          # Cyan tray glyph
@@ -479,7 +503,7 @@ Planned or discussed enhancements:
 
 ## Limitations
 
-**In scope:** fast mixer access, media key redirection, overlay, visualizer, customizable tray icon, Discord echo fix (per-app mute on Sonar Stream / Mic render / physical monitoring output).
+**In scope:** fast mixer access, media key redirection, overlay, visualizer, customizable tray icon, Windows autostart toggle, single-instance tray behavior, Discord echo fix (per-app mute on Sonar Stream / Mic render / physical monitoring output).
 
 **Out of scope:**
 
