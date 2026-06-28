@@ -1,6 +1,8 @@
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
@@ -34,6 +36,7 @@ public partial class MainWindow : Window
 
     private readonly SonarApiClient _apiClient = new();
     private readonly SonarChannelLevelMonitor _levelMonitor = new();
+    private readonly GitHubUpdateChecker _updateChecker = new();
     private readonly AppSettings _settings;
     private readonly MediaKeysOverrideService _mediaKeysOverride;
     private readonly DiscordScreenshareEchoFixService _discordScreenshareEchoFix;
@@ -68,6 +71,7 @@ public partial class MainWindow : Window
     private bool _suppressMediaKeysChannelChange;
     private bool _suppressFeatureToggleChanges;
     private bool _suppressTrayIconStyleChange;
+    private UpdateCheckResult? _updateCheckResult;
 
     public MainWindow(
         AppSettings settings,
@@ -204,6 +208,7 @@ public partial class MainWindow : Window
             _settingsSyncTimer.Stop();
             _levelMonitor.Dispose();
             _apiClient.Dispose();
+            _updateChecker.Dispose();
         };
 
         foreach (var slider in _sliderBindings.Keys)
@@ -212,6 +217,13 @@ public partial class MainWindow : Window
         }
 
         UpdateDisplayedValues();
+        InitializeUpdateUi();
+        _ = CheckForUpdatesAsync();
+    }
+
+    private void InitializeUpdateUi()
+    {
+        SettingsVersionText.Text = $"Installed: {AppVersion.Display}";
     }
 
     private void RegisterChannel(
@@ -1278,6 +1290,56 @@ public partial class MainWindow : Window
     }
 
     private void OpenSettingsButton_Click(object sender, RoutedEventArgs e) => _ = ShowSettingsViewAsync();
+
+    private void UpdateNotificationDot_Click(object sender, MouseButtonEventArgs e)
+    {
+        e.Handled = true;
+        OpenReleasePage();
+    }
+
+    private void OpenReleaseButton_Click(object sender, RoutedEventArgs e) => OpenReleasePage();
+
+    private void OpenReleasePage()
+    {
+        var url = _updateCheckResult?.ReleaseUrl
+            ?? "https://github.com/lixetron/steelseries-sonar-tray/releases/latest";
+
+        try
+        {
+            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+        }
+        catch
+        {
+            // Best-effort: browser launch can fail in restricted environments.
+        }
+    }
+
+    private async Task CheckForUpdatesAsync()
+    {
+        var result = await _updateChecker.CheckForUpdateAsync().ConfigureAwait(false);
+        await Dispatcher.InvokeAsync(() => ApplyUpdateCheckResult(result)).Task.ConfigureAwait(false);
+    }
+
+    private void ApplyUpdateCheckResult(UpdateCheckResult? result)
+    {
+        _updateCheckResult = result;
+
+        SettingsVersionText.Text = $"Installed: {AppVersion.Display}";
+
+        if (result?.IsUpdateAvailable == true)
+        {
+            UpdateNotificationDot.Visibility = Visibility.Visible;
+            UpdateAvailablePanel.Visibility = Visibility.Visible;
+            UpdateAvailableText.Text =
+                $"Version {AppVersion.Format(result.LatestVersion)} is available on GitHub.";
+            OpenSettingsButton.ToolTip = "Settings — update available";
+            return;
+        }
+
+        UpdateNotificationDot.Visibility = Visibility.Collapsed;
+        UpdateAvailablePanel.Visibility = Visibility.Collapsed;
+        OpenSettingsButton.ToolTip = "Settings";
+    }
 
     private void BackToMixerButton_Click(object sender, RoutedEventArgs e) => _ = ShowMixerViewAsync();
 

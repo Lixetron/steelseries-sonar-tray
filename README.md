@@ -127,6 +127,15 @@ Mute is applied only when Discord has an audio session on that endpoint. If Disc
 
 Mutes Discord on **SteelSeries Sonar — Microphone** playback (render only) when a Discord session is present on that endpoint.
 
+### Update check
+
+On startup the app quietly asks GitHub for the latest [release](https://github.com/lixetron/steelseries-sonar-tray/releases). When a newer version is available:
+
+- A cyan dot appears on the **Settings** button in the mixer header (click it to open the release page).
+- **Settings → About** shows the installed version and an **Open release page** link.
+
+The check runs in the background, requires no configuration, and fails silently when offline or when GitHub is unreachable — the mixer keeps working normally.
+
 ---
 
 ## Requirements
@@ -218,6 +227,8 @@ Open **Settings** from the mixer and toggle:
 - **Discord Screenshare Echo Fix** — off by default; enable if you need per-mode Discord mute on Sonar endpoints (see [Discord Screenshare Echo Fix](#discord-screenshare-echo-fix))
 - **Audio Visualizer**
 - **Tray icon** — Auto, Accent, White, or Dark
+
+**About** (bottom of Settings) shows the installed app version. When a newer release is on GitHub, a notification dot appears on the Settings button and an update card is shown here with a link to download.
 
 Settings are written to disk when you change a toggle (or when you close the mixer). On first run, `settings.json` is created on the first save. Tray icon changes apply without restarting the app.
 
@@ -381,6 +392,8 @@ It supports **classic** and **streamer** volume API paths and refreshes streamer
 | `WindowsStartupRegistration.cs` | `HKCU\...\Run` autostart registration |
 | `TrayIconProvider.cs` | Tray icon loading and Windows theme detection |
 | `AppSettings.cs` | JSON settings load/save |
+| `AppVersion.cs` | Installed version from assembly metadata |
+| `GitHubUpdateChecker.cs` | Background GitHub Releases check for updates |
 | `Assets/` | App and tray icons (`.ico` / `.png`) |
 
 ---
@@ -453,6 +466,8 @@ steelseries-sonar-tray/          # repository root (GitHub name unchanged)
 │   ├── SingleInstanceManager.cs
 │   ├── WindowsStartupRegistration.cs
 │   ├── TrayIconProvider.cs        # Tray icon styles + theme auto
+│   ├── AppVersion.cs              # Installed version
+│   ├── GitHubUpdateChecker.cs     # GitHub Releases update check
 │   ├── TrayWindowPlacement.cs
 │   ├── VolumeOverlay*.cs          # Overlay window + service
 │   ├── Controls/                  # SmoothScrolling, slider level meters
@@ -498,12 +513,13 @@ Planned or discussed enhancements:
 - [ ] **Physical device support** — Stream Deck, MIDI/HID knobs, custom mix controllers
 - [ ] **Volume overlay on all volume changes** — requires polling or push from Sonar (not available today)
 - [x] **GitHub Releases** — pre-built binaries for non-builders (tag `v*` → CI builds single `.exe` + folder `.zip`)
+- [x] **Update notifications** — GitHub Releases check on startup; dot on Settings + About card when a newer version exists
 
 ---
 
 ## Limitations
 
-**In scope:** fast mixer access, media key redirection, overlay, visualizer, customizable tray icon, Windows autostart toggle, single-instance tray behavior, Discord echo fix (per-app mute on Sonar Stream / Mic render / physical monitoring output).
+**In scope:** fast mixer access, media key redirection, overlay, visualizer, customizable tray icon, Windows autostart toggle, single-instance tray behavior, Discord echo fix (per-app mute on Sonar Stream / Mic render / physical monitoring output), GitHub update notifications.
 
 **Out of scope:**
 
