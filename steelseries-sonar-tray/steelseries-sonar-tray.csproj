@@ -11,7 +11,7 @@
     <AssemblyName>SonarQuickMixer</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
     <AssemblyTitle>Sonar Quick Mixer</AssemblyTitle>
     <Product>Sonar Quick Mixer</Product>
     <Description>Lightweight Windows system-tray companion for SteelSeries Sonar.</Description>
