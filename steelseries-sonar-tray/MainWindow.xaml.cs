@@ -494,9 +494,22 @@ public partial class MainWindow : Window
         UpdateLayout();
         var headerHeight = ResolveLockedHeaderHostHeight();
         ViewHeaderHost.MinHeight = headerHeight;
-        var contentAreaHeight = Math.Max(0, height - headerHeight - 58);
-        MixerTabPanel.MinHeight = contentAreaHeight;
+
+        var contentWidth = Math.Max(ActualWidth, Width) - 34;
+        if (contentWidth < 200)
+        {
+            contentWidth = 370;
+        }
+
+        ChannelsPanel.Measure(new System.Windows.Size(contentWidth, double.PositiveInfinity));
+        var contentAreaHeight = ChannelsPanel.DesiredSize.Height;
+
+        ViewContentHost.MinHeight = contentAreaHeight;
+        ViewContentHost.MaxHeight = contentAreaHeight;
+        MixerTabPanel.MinHeight = 0;
+        MixerTabPanel.MaxHeight = double.PositiveInfinity;
         SettingsTabPanel.MinHeight = contentAreaHeight;
+        SettingsTabPanel.MaxHeight = contentAreaHeight;
     }
 
     private double ResolveLockedHeaderHostHeight()
@@ -530,8 +543,12 @@ public partial class MainWindow : Window
         MinHeight = 200;
         MaxHeight = 700;
         ViewHeaderHost.MinHeight = 0;
+        ViewContentHost.MinHeight = 0;
+        ViewContentHost.MaxHeight = double.PositiveInfinity;
         MixerTabPanel.MinHeight = 0;
+        MixerTabPanel.MaxHeight = double.PositiveInfinity;
         SettingsTabPanel.MinHeight = 0;
+        SettingsTabPanel.MaxHeight = double.PositiveInfinity;
     }
 
     private void ClearSlideAnimations()
@@ -1300,7 +1317,7 @@ public partial class MainWindow : Window
         }
 
         LockOverlayHeight();
-        UpdateLayout();
+        PrepareIncomingViewLayout(showSettings);
 
         var slideDistance = GetViewSlideDistance();
 
@@ -1388,6 +1405,21 @@ public partial class MainWindow : Window
         ResetViewSlideState(SettingsTabPanel);
         ResetViewZOrder();
         ApplyViewState();
+    }
+
+    private void PrepareIncomingViewLayout(bool showSettings)
+    {
+        if (showSettings)
+        {
+            SettingsTabPanel.Visibility = Visibility.Visible;
+            SettingsTabPanel.ScrollToVerticalOffset(0);
+        }
+        else
+        {
+            MixerTabPanel.Visibility = Visibility.Visible;
+        }
+
+        UpdateLayout();
     }
 
     private double GetViewSlideDistance()

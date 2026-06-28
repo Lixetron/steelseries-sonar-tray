@@ -79,7 +79,8 @@
 
             <Grid x:Name="ViewContentHost" Grid.Row="1" ClipToBounds="True">
                 <ScrollViewer x:Name="MixerTabPanel"
-                              VerticalScrollBarVisibility="Auto"
+                              Style="{StaticResource FluentScrollViewerStyle}"
+                              VerticalScrollBarVisibility="Disabled"
                               HorizontalScrollBarVisibility="Disabled"
                               VerticalAlignment="Stretch">
                     <StackPanel x:Name="ChannelsPanel">
@@ -373,9 +374,13 @@
                     </StackPanel>
                 </ScrollViewer>
 
-                <StackPanel x:Name="SettingsTabPanel"
-                            Visibility="Collapsed"
-                            VerticalAlignment="Top">
+                <ScrollViewer x:Name="SettingsTabPanel"
+                              Style="{StaticResource FluentScrollViewerStyle}"
+                              Visibility="Collapsed"
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled"
+                              VerticalAlignment="Stretch">
+                    <StackPanel>
                     <TextBlock Text="Features"
                                Foreground="{StaticResource TextPrimaryBrush}"
                                FontSize="12"
@@ -433,7 +438,8 @@
                     <ComboBox x:Name="TrayIconStyleCombo"
                               Style="{StaticResource FluentComboBoxStyle}"
                               SelectionChanged="TrayIconStyleCombo_SelectionChanged"/>
-                </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
             </Grid>
         </Grid>
     </Border>
