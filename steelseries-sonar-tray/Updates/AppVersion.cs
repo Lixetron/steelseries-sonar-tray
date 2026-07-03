@@ -1,6 +1,6 @@
 using System.Reflection;
 
-namespace SonarQuickMixer;
+namespace SonarQuickMixer.Updates;
 
 public static class AppVersion
 {

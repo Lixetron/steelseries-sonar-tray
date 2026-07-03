@@ -1,4 +1,4 @@
-namespace SonarQuickMixer;
+namespace SonarQuickMixer.Sonar;
 
 public sealed class SonarEchoFixRouting
 {

@@ -1,6 +1,6 @@
 using Microsoft.Win32;
 
-namespace SonarQuickMixer;
+namespace SonarQuickMixer.Settings;
 
 public static class WindowsStartupRegistration
 {

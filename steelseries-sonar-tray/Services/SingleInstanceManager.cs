@@ -1,7 +1,7 @@
 using System.IO.Pipes;
 using System.Text;
 
-namespace SonarQuickMixer;
+namespace SonarQuickMixer.Services;
 
 internal sealed class SingleInstanceManager : IDisposable
 {

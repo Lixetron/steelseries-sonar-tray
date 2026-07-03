@@ -1,8 +1,9 @@
 using System.Drawing;
 using System.Reflection;
 using Microsoft.Win32;
+using SonarQuickMixer.Settings;
 
-namespace SonarQuickMixer;
+namespace SonarQuickMixer.Tray;
 
 internal static class TrayIconProvider
 {

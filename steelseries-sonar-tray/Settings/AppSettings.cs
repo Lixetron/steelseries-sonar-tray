@@ -1,7 +1,7 @@
 using System.IO;
 using System.Text.Json;
 
-namespace SonarQuickMixer;
+namespace SonarQuickMixer.Settings;
 
 public sealed class AppSettings
 {

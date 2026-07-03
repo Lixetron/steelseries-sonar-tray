@@ -4,7 +4,7 @@ using System.Net.Http;
 using System.Text.Json;
 using SonarQuickMixer.Audio;
 
-namespace SonarQuickMixer;
+namespace SonarQuickMixer.Sonar;
 
 public sealed class SonarApiClient : IDisposable
 {

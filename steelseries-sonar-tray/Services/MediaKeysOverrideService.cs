@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices;
+using SonarQuickMixer.Sonar;
 
-namespace SonarQuickMixer;
+namespace SonarQuickMixer.Services;
 
 public sealed class MediaKeysOverrideService : IDisposable
 {

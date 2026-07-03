@@ -1,8 +1,9 @@
 using System.Diagnostics;
 using NAudio.CoreAudioApi;
 using SonarQuickMixer.Audio;
+using SonarQuickMixer.Sonar;
 
-namespace SonarQuickMixer;
+namespace SonarQuickMixer.Services;
 
 public sealed class DiscordScreenshareEchoFixService : IDisposable
 {

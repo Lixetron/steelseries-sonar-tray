@@ -2,8 +2,10 @@ using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
+using SonarQuickMixer.Services;
+using SonarQuickMixer.Sonar;
 
-namespace SonarQuickMixer;
+namespace SonarQuickMixer.Views;
 
 public partial class VolumeOverlayWindow : Window
 {

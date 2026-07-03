@@ -2,6 +2,10 @@ using System.Drawing;
 using System.Windows;
 using System.Windows.Interop;
 using Application = System.Windows.Application;
+using SonarQuickMixer.Services;
+using SonarQuickMixer.Settings;
+using SonarQuickMixer.Tray;
+using SonarQuickMixer.Views;
 using WinForms = System.Windows.Forms;
 
 namespace SonarQuickMixer;

@@ -1,8 +1,9 @@
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Threading;
+using SonarQuickMixer.Views;
 
-namespace SonarQuickMixer;
+namespace SonarQuickMixer.Services;
 
 public sealed class VolumeOverlayService : IDisposable
 {

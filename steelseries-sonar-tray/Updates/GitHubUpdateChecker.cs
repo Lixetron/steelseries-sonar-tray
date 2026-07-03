@@ -2,7 +2,7 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace SonarQuickMixer;
+namespace SonarQuickMixer.Updates;
 
 public sealed class GitHubUpdateChecker : IDisposable
 {

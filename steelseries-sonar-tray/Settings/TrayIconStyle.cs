@@ -1,4 +1,4 @@
-namespace SonarQuickMixer;
+namespace SonarQuickMixer.Settings;
 
 public enum TrayIconStyle
 {
