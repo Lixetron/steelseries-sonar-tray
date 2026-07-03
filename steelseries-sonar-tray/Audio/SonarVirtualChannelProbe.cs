@@ -4,12 +4,12 @@ namespace SonarQuickMixer.Audio;
 
 internal static class SonarVirtualChannelMap
 {
-    internal static readonly Dictionary<string, string> DeviceFragments = new(StringComparer.OrdinalIgnoreCase)
+    internal static readonly Dictionary<string, string[]> DeviceFragments = new(StringComparer.OrdinalIgnoreCase)
     {
-        ["game"] = "Game",
-        ["chatRender"] = "Chat",
-        ["media"] = "Media",
-        ["aux"] = "Aux",
+        ["game"] = ["Gaming", "Game"],
+        ["chatRender"] = ["Chat"],
+        ["media"] = ["Media"],
+        ["aux"] = ["Aux"],
     };
 
     internal static bool TryMatchChannel(string friendlyName, out string channel)
@@ -22,12 +22,15 @@ internal static class SonarVirtualChannelMap
             return false;
         }
 
-        foreach (var (channelName, fragment) in DeviceFragments)
+        foreach (var (channelName, fragments) in DeviceFragments)
         {
-            if (friendlyName.Contains(fragment, StringComparison.OrdinalIgnoreCase))
+            foreach (var fragment in fragments)
             {
-                channel = channelName;
-                return true;
+                if (friendlyName.Contains(fragment, StringComparison.OrdinalIgnoreCase))
+                {
+                    channel = channelName;
+                    return true;
+                }
             }
         }
 
