@@ -7,6 +7,7 @@ public sealed class SonarChannelLevelMonitor : IDisposable
     private const float DecayFactor = 0.88f;
     private static readonly TimeSpan DeviceRefreshInterval = TimeSpan.FromSeconds(5);
 
+    private readonly object _gate = new();
     private readonly MMDeviceEnumerator _enumerator = new();
     private readonly Dictionary<string, MMDevice> _devices = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, float> _smoothedLevels = new(StringComparer.OrdinalIgnoreCase);
@@ -14,21 +15,34 @@ public sealed class SonarChannelLevelMonitor : IDisposable
     private DateTime _lastDeviceRefreshUtc = DateTime.MinValue;
     private bool _disposed;
 
-    public bool HasDevices => _devices.Count > 0;
+    public bool HasDevices
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _devices.Count > 0;
+            }
+        }
+    }
 
     public IReadOnlyDictionary<string, float> PollLevels()
     {
-        RefreshDevicesIfNeeded();
-
-        var results = new Dictionary<string, float>(StringComparer.OrdinalIgnoreCase);
-
-        foreach (var (channel, device) in _devices)
+        lock (_gate)
         {
-            var peak = ReadPeak(device);
-            results[channel] = Smooth(channel, peak);
-        }
+            ThrowIfDisposed();
+            RefreshDevicesIfNeeded();
 
-        return results;
+            var results = new Dictionary<string, float>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var (channel, device) in _devices)
+            {
+                var peak = ReadPeak(device);
+                results[channel] = Smooth(channel, peak);
+            }
+
+            return results;
+        }
     }
 
     private float Smooth(string channel, float peak)
@@ -53,13 +67,28 @@ public sealed class SonarChannelLevelMonitor : IDisposable
         }
     }
 
-    public void RefreshDevices() => RefreshDevices(force: true);
+    public void RefreshDevices()
+    {
+        lock (_gate)
+        {
+            ThrowIfDisposed();
+            RefreshDevices(force: true);
+        }
+    }
 
     public void Suspend()
     {
-        DisposeDevices();
-        _smoothedLevels.Clear();
-        _lastDeviceRefreshUtc = DateTime.MinValue;
+        lock (_gate)
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            DisposeDevices();
+            _smoothedLevels.Clear();
+            _lastDeviceRefreshUtc = DateTime.MinValue;
+        }
     }
 
     private void RefreshDevicesIfNeeded() => RefreshDevices(force: false);
@@ -110,15 +139,27 @@ public sealed class SonarChannelLevelMonitor : IDisposable
         _devices.Clear();
     }
 
-    public void Dispose()
+    private void ThrowIfDisposed()
     {
         if (_disposed)
         {
-            return;
+            throw new ObjectDisposedException(nameof(SonarChannelLevelMonitor));
+        }
+    }
+
+    public void Dispose()
+    {
+        lock (_gate)
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+            DisposeDevices();
         }
 
-        _disposed = true;
-        DisposeDevices();
         _enumerator.Dispose();
     }
 }

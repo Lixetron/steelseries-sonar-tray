@@ -18,6 +18,7 @@ public partial class MainWindow : Window
     private const int LevelPollIntervalMs = 33;
     private const double VisualizerDisplayGain = 1.45;
     private const int SettingsSyncIntervalMs = 1000;
+    private const int BackgroundSyncIntervalMs = 5000;
     private const double SlideDistanceDip = 24;
     private const int ShowAnimationMs = 240;
     private const int HideAnimationMs = 180;
@@ -45,6 +46,7 @@ public partial class MainWindow : Window
     private readonly DispatcherTimer _volumeThrottleTimer;
     private readonly DispatcherTimer _levelPollTimer;
     private readonly DispatcherTimer _settingsSyncTimer;
+    private readonly DispatcherTimer _backgroundSyncTimer;
     private readonly Dictionary<Slider, (string Channel, SonarMixerPath Path)> _sliderBindings = new();
     private readonly Dictionary<Slider, TextBlock> _sliderValueLabels = new();
     private readonly Dictionary<ToggleButton, (string Channel, SonarMixerPath Path)> _muteBindings = new();
@@ -67,11 +69,13 @@ public partial class MainWindow : Window
     private float _pendingVolume;
     private DateTime _lastVolumeSendUtc = DateTime.MinValue;
     private string? _cachedStatusText;
+    private SonarMixerSnapshot? _cachedMixerSnapshot;
     private double? _lockedHeaderHostHeight;
     private bool _suppressMediaKeysChannelChange;
     private bool _suppressFeatureToggleChanges;
     private bool _suppressTrayIconStyleChange;
     private UpdateCheckResult? _updateCheckResult;
+    private bool _mixerSyncInProgress;
 
     public MainWindow(
         AppSettings settings,
@@ -177,6 +181,13 @@ public partial class MainWindow : Window
         };
         _settingsSyncTimer.Tick += SettingsSyncTimer_Tick;
 
+        _backgroundSyncTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(BackgroundSyncIntervalMs)
+        };
+        _backgroundSyncTimer.Tick += BackgroundSyncTimer_Tick;
+        _backgroundSyncTimer.Start();
+
         _suppressFeatureToggleChanges = true;
         try
         {
@@ -206,6 +217,7 @@ public partial class MainWindow : Window
             _settings.Save();
             _levelPollTimer.Stop();
             _settingsSyncTimer.Stop();
+            _backgroundSyncTimer.Stop();
             _levelMonitor.Dispose();
             _apiClient.Dispose();
             _updateChecker.Dispose();
@@ -301,6 +313,8 @@ public partial class MainWindow : Window
         Show();
         Visibility = Visibility.Visible;
         UpdateLayout();
+        ReleaseOverlayHeight();
+        ApplyCachedMixerUiIfAvailable();
 
         Topmost = true;
         CaptureAnchorPosition();
@@ -368,8 +382,7 @@ public partial class MainWindow : Window
                 return;
             }
 
-            var statusText = BuildStatusText(snapshot);
-            await Dispatcher.InvokeAsync(() => _cachedStatusText = statusText).Task.ConfigureAwait(false);
+            await Dispatcher.InvokeAsync(() => ApplyMixerSnapshotUiState(snapshot)).Task.ConfigureAwait(false);
         }
         catch
         {
@@ -393,17 +406,12 @@ public partial class MainWindow : Window
     {
         try
         {
-            if (!await _apiClient.EnsureConnectedAsync().ConfigureAwait(true))
+            if (!await _apiClient.EnsureConnectedAsync().ConfigureAwait(false))
             {
                 return null;
             }
 
-            if (_settings.AudioVisualizerEnabled)
-            {
-                _levelMonitor.RefreshDevices();
-            }
-
-            return await _apiClient.GetMixerSnapshotAsync().ConfigureAwait(true);
+            return await _apiClient.GetMixerSnapshotAsync().ConfigureAwait(false);
         }
         catch (Exception)
         {
@@ -658,24 +666,62 @@ public partial class MainWindow : Window
 
     private async void SettingsSyncTimer_Tick(object? sender, EventArgs e)
     {
-        if (!_isVisibleForUser || _isUpdatingFromApi)
+        if (!_isVisibleForUser || _isUpdatingFromApi || _mixerSyncInProgress)
         {
             return;
         }
 
+        _mixerSyncInProgress = true;
         try
         {
-            if (_settings.AudioVisualizerEnabled)
+            var snapshot = await _apiClient.GetMixerSnapshotAsync().ConfigureAwait(true);
+            if (!_apiClient.IsConnected)
             {
-                _levelMonitor.RefreshDevices();
+                return;
             }
 
-            var snapshot = await _apiClient.GetMixerSnapshotAsync().ConfigureAwait(true);
             ApplyMixerSnapshot(snapshot, applyVolumes: !IsUserAdjustingMixer());
         }
         catch (Exception)
         {
             // Ignore transient sync errors while the overlay is open.
+        }
+        finally
+        {
+            _mixerSyncInProgress = false;
+        }
+    }
+
+    private async void BackgroundSyncTimer_Tick(object? sender, EventArgs e)
+    {
+        if (_isVisibleForUser || _isUpdatingFromApi || _mixerSyncInProgress)
+        {
+            return;
+        }
+
+        _mixerSyncInProgress = true;
+        try
+        {
+            if (!await _apiClient.EnsureConnectedAsync().ConfigureAwait(false))
+            {
+                return;
+            }
+
+            var snapshot = await _apiClient.GetMixerSnapshotAsync().ConfigureAwait(false);
+            if (!_apiClient.IsConnected)
+            {
+                return;
+            }
+
+            await Dispatcher.InvokeAsync(() => ApplyMixerSnapshotUiState(snapshot)).Task.ConfigureAwait(false);
+        }
+        catch (Exception)
+        {
+            // Warm background cache refresh is best-effort.
+        }
+        finally
+        {
+            _mixerSyncInProgress = false;
         }
     }
 
@@ -826,7 +872,11 @@ public partial class MainWindow : Window
         var snapshot = await FetchMixerSnapshotAsync().ConfigureAwait(true);
         if (snapshot is null)
         {
-            if (HasCachedConnectionStatus())
+            if (_cachedMixerSnapshot is not null)
+            {
+                ApplyMixerSnapshot(_cachedMixerSnapshot);
+            }
+            else if (HasCachedConnectionStatus())
             {
                 StatusText.Text = _cachedStatusText!;
             }
@@ -841,19 +891,52 @@ public partial class MainWindow : Window
         ApplyMixerSnapshot(snapshot);
     }
 
-    private async Task SyncMixerSnapshotAsync(bool applyVolumes = true)
+    private Task SyncMixerSnapshotAsync(bool applyVolumes = true)
     {
-        if (_settings.AudioVisualizerEnabled)
+        if (_mixerSyncInProgress)
         {
-            _levelMonitor.RefreshDevices();
+            return Task.CompletedTask;
         }
 
-        var snapshot = await _apiClient.GetMixerSnapshotAsync().ConfigureAwait(true);
-        ApplyMixerSnapshot(snapshot, applyVolumes);
+        return SyncMixerSnapshotCoreAsync(applyVolumes);
+    }
+
+    private async Task SyncMixerSnapshotCoreAsync(bool applyVolumes = true)
+    {
+        _mixerSyncInProgress = true;
+        try
+        {
+            var snapshot = await _apiClient.GetMixerSnapshotAsync().ConfigureAwait(true);
+            if (!_apiClient.IsConnected)
+            {
+                return;
+            }
+
+            ApplyMixerSnapshot(snapshot, applyVolumes);
+        }
+        finally
+        {
+            _mixerSyncInProgress = false;
+        }
     }
 
     private void ApplyMixerSnapshot(SonarMixerSnapshot snapshot, bool applyVolumes = true)
     {
+        ApplyMixerSnapshotUiState(snapshot, applyVolumes);
+
+        if (_isVisibleForUser)
+        {
+            LockOverlayHeight();
+            if (!_isSlideAnimating && !_isViewTransitionAnimating)
+            {
+                RepositionOverlay();
+            }
+        }
+    }
+
+    private void ApplyMixerSnapshotUiState(SonarMixerSnapshot snapshot, bool applyVolumes = true)
+    {
+        _cachedMixerSnapshot = snapshot;
         _enabledChannels.Clear();
         foreach (var channel in snapshot.EnabledChannels)
         {
@@ -872,15 +955,6 @@ public partial class MainWindow : Window
         else
         {
             UpdateCachedStatusText(snapshot);
-        }
-
-        if (_isVisibleForUser)
-        {
-            LockOverlayHeight();
-            if (!_isSlideAnimating && !_isViewTransitionAnimating)
-            {
-                RepositionOverlay();
-            }
         }
     }
 
@@ -916,6 +990,17 @@ public partial class MainWindow : Window
     private void ClearCachedStatusText()
     {
         _cachedStatusText = null;
+        _cachedMixerSnapshot = null;
+    }
+
+    private void ApplyCachedMixerUiIfAvailable()
+    {
+        if (_cachedMixerSnapshot is null)
+        {
+            return;
+        }
+
+        ApplyMixerSnapshotUiState(_cachedMixerSnapshot);
     }
 
     private void ApplyChannelVisibility(SonarMixerSnapshot snapshot)
