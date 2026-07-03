@@ -75,26 +75,91 @@ flowchart LR
 
 `App.xaml.cs` stays at the project root and wires services, tray, and the main window together.
 
-## Sonar API discovery
+## Sonar API layer
 
-`SonarApiClient` resolves Sonar’s web server from:
+`SonarApiClient` is a thin **facade** over focused internal components. Public API is unchanged; callers still use `new SonarApiClient()`.
+
+```mermaid
+flowchart TB
+  Client[SonarApiClient]
+  Conn[SonarConnection]
+  Mixer[SonarMixerApi]
+  Echo[SonarEchoFixApi]
+  Http[SonarHttpTransport]
+  Disc[SonarWebServerDiscovery]
+  Mode[SonarModeDetector]
+  Parse[Parsing/*]
+
+  Client --> Conn
+  Client --> Mixer
+  Client --> Echo
+  Conn --> Disc
+  Conn --> Mode
+  Conn --> Http
+  Mixer --> Http
+  Mixer --> Parse
+  Echo --> Http
+  Echo --> Parse
+  Disc --> Http
+  Mode --> Http
+```
+
+### Discovery
+
+Sonar’s web server is resolved from:
 
 1. `%ProgramData%\SteelSeries\SteelSeries Engine 3\coreProps.json` → GG API → `GET /subApps`
 2. Fallback: `%ProgramData%\SteelSeries\SteelSeries GG\subApps.json`
 
 Supports **classic** and **streamer** volume API paths; streamer mode is refreshed on demand.
 
+### Sonar folder layout
+
+```
+Sonar/
+├── SonarApiClient.cs          # public facade
+├── Models/
+│   ├── SonarMixerSnapshot.cs
+│   ├── SonarMixerPath.cs
+│   ├── SonarEchoFixRouting.cs
+│   └── StreamMixRouting.cs
+├── Connection/
+│   ├── SonarConnection.cs
+│   ├── SonarSession.cs
+│   ├── SonarWebServerDiscovery.cs
+│   └── SonarModeDetector.cs
+├── Http/
+│   ├── SonarHttpTransport.cs
+│   └── SonarEndpoints.cs
+├── Api/
+│   ├── SonarMixerApi.cs
+│   └── SonarEchoFixApi.cs
+└── Parsing/
+    ├── VolumeSettingsParser.cs
+    ├── StreamMixRoutingParser.cs
+    ├── FeatureFlagsParser.cs
+    └── JsonBooleanParser.cs
+```
+
+| Folder | Role |
+|--------|------|
+| `Models/` | Public mixer/echo-fix DTOs and channel constants |
+| `Connection/` | Discovery, session state, classic/streamer mode |
+| `Http/` | Shared HTTP transport and URL builders |
+| `Api/` | Mixer read/write and echo-fix routing operations |
+| `Parsing/` | Stateless JSON parsers |
+
 ## Key components
 
 | Area | Role |
 |------|------|
-| `Sonar/SonarApiClient.cs` | HTTP client; mixer read/write; echo-fix routing |
-| `Sonar/SonarMixerSnapshot.cs` / `SonarMixerPath.cs` | Mixer model and classic/streamer API paths |
+| `Sonar/SonarApiClient.cs` | Public entry point (facade) |
+| `Sonar/Models/SonarMixerSnapshot.cs` / `SonarMixerPath.cs` | Mixer model and classic/streamer API paths |
 | `Mixing/MixerControlRegistry.cs` | Maps XAML sliders/toggles to Sonar channels and paths |
 | `Mixing/MixerSnapshotCoordinator.cs` | Applies API snapshots to UI; status text and cache |
 | `Mixing/VolumeSendCoordinator.cs` | Throttled volume writes while dragging sliders |
 | `Mixing/AudioVisualizerCoordinator.cs` | Live level meters on mixer sliders |
-| `Services/DiscordScreenshareEchoFixService.cs` / `Sonar/SonarEchoFixRouting.cs` | Per-app Discord mute on WASAPI endpoints |
+| `Services/DiscordScreenshareEchoFixService.cs` / `Sonar/Models/SonarEchoFixRouting.cs` | Per-app Discord mute on WASAPI endpoints |
 | `Audio/*` | WASAPI device probes and channel level monitor |
 | `Views/MainWindow.xaml(.cs)` | Overlay shell; delegates mixer/settings logic to coordinators |
 | `Views/SettingsPanelController.cs` | Settings toggles, combos, persistence |
