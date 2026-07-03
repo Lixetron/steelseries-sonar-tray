@@ -20,6 +20,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="SonarQuickMixer.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="NAudio" Version="2.3.0" />
   </ItemGroup>
 
