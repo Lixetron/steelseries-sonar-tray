@@ -8,7 +8,7 @@
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%2B-blue)](https://www.microsoft.com/windows)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-A lightweight Windows system-tray companion for [SteelSeries Sonar](https://www.steelseries.com/gg/sonar). Open a fast mixer popup, adjust channel volumes without launching SteelSeries GG, redirect hardware media keys to Sonar, and get a clean on-screen volume indicator.
+A lightweight Windows system-tray companion for [SteelSeries Sonar](https://www.steelseries.com/gg/sonar). Open a fast mixer popup, adjust channel volumes without launching SteelSeries GG, redirect hardware media keys to Sonar, map MIDI controllers to Sonar channels, and get a clean on-screen volume indicator.
 
 **This project is not affiliated with, endorsed by, or supported by SteelSeries.** It talks to the local Sonar HTTP API exposed by SteelSeries GG while Sonar is running.
 
@@ -23,6 +23,7 @@ A lightweight Windows system-tray companion for [SteelSeries Sonar](https://www.
 | No clear feedback when Sonar handles volume | **Volume Overlay** shows channel name, level, and mute state |
 | Hard to see which channel is active while mixing | **Audio Visualizer** paints live levels on sliders |
 | Discord double audio with Sonar routing | **Discord Screenshare Echo Fix** — per-app mute on Sonar endpoints |
+| Want a physical mixer for Sonar channels | **MIDI Setup** binds controllers (faders / encoders / pads) with layout presets and optional LED feedback |
 
 Sonar Quick Mixer is a **daily-driver layer on top of Sonar**, not a replacement for GG. Routing apps to channels, mic setup, spatial audio, and driver management still live in SteelSeries GG.
 
@@ -36,7 +37,8 @@ Sonar Quick Mixer is a **daily-driver layer on top of Sonar**, not a replacement
 
 Requires **Windows 10+** (64-bit). The single-file build bundles .NET 8; the folder `.zip` needs the [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0).
 
-Full installation options, usage, and settings: [User guide](docs/user-guide.md)
+Full installation options, usage, and settings: [User guide](docs/user-guide.md)  
+MIDI controllers: [User guide → MIDI Setup](docs/user-guide.md#midi-setup) · [Preset authoring](docs/midi-preset-authoring.md)
 
 ---
 
@@ -44,9 +46,10 @@ Full installation options, usage, and settings: [User guide](docs/user-guide.md)
 
 | Document | Contents |
 |----------|----------|
-| [User guide](docs/user-guide.md) | Features, installation, usage, settings |
-| [Troubleshooting](docs/troubleshooting.md) | Common problems and fixes |
-| [Architecture](docs/architecture.md) | How the app talks to Sonar and Windows audio |
+| [User guide](docs/user-guide.md) | Features, installation, usage, settings, MIDI Setup |
+| [Troubleshooting](docs/troubleshooting.md) | Common problems and fixes (including MIDI) |
+| [MIDI layout preset authoring](docs/midi-preset-authoring.md) | Hand-edit / DIY layout JSON schema |
+| [Architecture](docs/architecture.md) | How the app talks to Sonar, Windows audio, and MIDI |
 | [Development](docs/development.md) | Build, release, contributing, roadmap |
 
 ---

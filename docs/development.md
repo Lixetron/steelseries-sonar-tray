@@ -60,7 +60,9 @@ Commit script output (`*.ico`, `*.png`) with script changes.
 - [ ] Stream Deck / HID companions
 - [ ] Volume overlay on all volume changes (needs Sonar push/poll)
 
-Completed: Discord echo fix, GitHub Releases, update notifications, MIDI Blueprint + Learn.
+Completed: Discord echo fix, GitHub Releases, update notifications, MIDI Blueprint + Learn, layout presets, staged bindings / LED feedback.
+
+For MIDI layout JSON and DIY presets, see [MIDI layout preset authoring](midi-preset-authoring.md).
 
 ---
 

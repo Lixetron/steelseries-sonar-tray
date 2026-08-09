@@ -1,5 +1,7 @@
 # MIDI layout preset authoring (manual JSON)
 
+[← Back to README](../README.md) · [User guide → MIDI Setup](user-guide.md#midi-setup) · [Architecture](architecture.md)
+
 This guide explains how to create or edit a **device layout preset** by hand, without the MIDI Setup constructor UI.
 
 A layout preset describes:
@@ -299,7 +301,7 @@ Explicit messages (e.g. CC mode button that lights via a different Note):
 }
 ```
 
-In MIDI Setup (normal mode), select any control and use **LED feedback** as two dropdowns: **source** (Off / On mute / On channel selected) and **style** (Solid / Blink). Faders only offer Off / Channel assigned (soft takeover); style is not used — the surface blinks while Sonar ≠ physical fader. Changes are **staged** like channel assignments — use **Save changes** / **Discard**. Hardware lamps update only after Save. In the layout constructor the same options appear under Label (saved with **Save layout**).
+In MIDI Setup (normal mode), select any control and use **LED feedback** as two dropdowns: **source** (Off / On mute / On channel selected) and **style** (Solid / Blink). Faders only offer Off / Channel assigned (soft takeover); style is not used — the surface blinks while Sonar ≠ physical fader. Changes are **staged** like channel assignments — use **Save changes** / **Discard**. Hardware lamps update only after Save (not while editing). Unsaved controls show a yellow outline; changed inspector fields show a yellow `*`. In the layout constructor the same LED options appear under Label (saved with **Save layout**).
 
 Official shipping presets (e.g. SMC-Mixer) intentionally omit `feedback` — they only bake hardware identity so Learn is unnecessary. Enable mute/channel LEDs in MIDI Setup on a user preset copy if you want them.
 
@@ -328,8 +330,10 @@ Do not call the Pitch Bend + MCU Notes map “Mode B”: on the hardware that la
 
 ### Reset behaviour
 
-- **Restore factory layout** — deletes the **user** override file and shows the official (or generic) layout again.
+- **Layout preset combo → Official / built-in** — switches the active layout without deleting user files.
+- **Delete** (user preset selected) — removes that user JSON and falls back to the official layout.
 - **Reset all bindings** — clears mappings for that device, then re-seeds factory hardware from the **resolved** layout (user override if present).
+- **Rename…** — changes the display `name` of the selected **user** preset in place (same file). Official presets are read-only — use **Save as…** first.
 
 ---
 

@@ -1,6 +1,6 @@
 # User guide
 
-[← Back to README](../README.md) · [Troubleshooting](troubleshooting.md) · [Architecture](architecture.md)
+[← Back to README](../README.md) · [Troubleshooting](troubleshooting.md) · [Architecture](architecture.md) · [MIDI presets](midi-preset-authoring.md)
 
 ---
 
@@ -60,6 +60,30 @@ Mutes **only Discord** (`Discord`, `DiscordPTB`, `DiscordCanary`) via Windows pe
 
 Mute applies only when Discord has an audio session on that endpoint. **Never muted:** Sonar Microphone **capture**, Game/Chat/Media/Aux, other apps.
 
+### MIDI Setup
+
+Bind USB / MIDI controllers to Sonar channels without opening SteelSeries GG.
+
+| Piece | Role |
+|-------|------|
+| **Enable MIDI** (Settings) | Opens selected device ports in the background |
+| **Open MIDI Setup…** | Blueprint UI: pick device, layout preset, assign channels / actions / LED feedback |
+| **Layout presets** | Official maps under `Presets/` (e.g. M-VAVE SMC-Mixer in **DAW Mode**); DIY under `%LocalAppData%\Lixetron\SonarQuickMixer\UserPresets\` |
+| **Mappings** | Sonar channel routes in `midi-mappings.json` (not inside layout JSON) |
+
+Typical flow:
+
+1. Enable **MIDI** in Settings, then **Open MIDI Setup…**.
+2. Select the device → **Use device**.
+3. Pick a **layout preset** (official or user). For SMC-Mixer, use hardware **DAW Mode / Mode A** (`Shift+←`).
+4. Assign **Channel**, **Mode**, **Action**, and optional **LED feedback** (Source + Style).
+5. Click **Save changes** (or **Discard**). Edits are staged: yellow outline on dirty controls, `*` next to changed fields.
+6. Optional: **Edit layout** constructor, **Learn** hardware, **Save as…** / **Rename…** / Export / Import presets.
+
+Official shipping presets bake **hardware identity only** (so Learn is often unnecessary). LED feedback and default actions are configured in MIDI Setup on a user preset copy.
+
+Hand-authoring layout JSON: [MIDI layout preset authoring](midi-preset-authoring.md).
+
 ### Update check
 
 On startup, checks GitHub [Releases](https://github.com/lixetron/steelseries-sonar-tray/releases) in the background. A newer version shows a cyan dot on **Settings** and an update card in **Settings → About**. Fails silently when offline.
@@ -108,6 +132,7 @@ Place a shortcut in the Startup folder (`Win+R` → `shell:startup`). Prefer the
 | **Left-click** tray icon | Open mixer near the cursor |
 | **Right-click** → **Open Mixer** / **Exit** | Open mixer or quit |
 | **Launch again** while running | Focus existing instance (single-instance app) |
+| **Settings → Open MIDI Setup…** | Configure MIDI devices, presets, and channel bindings |
 
 **Settings** (gear icon): toggle features listed in [Settings reference](#settings-reference). **Back** or click outside to close.
 
@@ -134,5 +159,16 @@ Settings save on toggle or when the mixer closes. Tray icon style applies immedi
 | `DiscordScreenshareEchoFix` | `false` | Per-app Discord mute on Sonar endpoints (see above) |
 | `AudioVisualizerEnabled` | `true` | Live level meters on sliders |
 | `TrayIconStyle` | `0` | `0` Auto, `1` Accent, `2` White, `3` Dark |
+| `MidiEnabled` | `false` | Open selected MIDI input/output ports and apply bindings |
+| `MidiRelativeStep` | `0.02` | Volume step per relative encoder tick (2%) |
 
 You can edit the file while running; reopen settings or restart for all services to pick up changes.
+
+Related AppData files for MIDI:
+
+| File | Role |
+|------|------|
+| `midi-mappings.json` | Per-control Sonar channel / mode / action |
+| `midi-control-state.json` | Last absolute fader positions (anti-fighting) |
+| `UserPresets\*.json` | DIY layout presets |
+| `UserPresets\midi-preset-selection.json` | Which preset is active per device product |

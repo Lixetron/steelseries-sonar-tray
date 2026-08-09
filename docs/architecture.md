@@ -101,10 +101,10 @@ flowchart LR
 
 - **Multi-device:** `MidiInputHub` opens selected `InputDevice` instances (DryWetMidi) and tags every event with `DeviceName`.
 - **Modes:** Absolute CC → `raw/127`; Pitch Bend (SMC-Mixer **DAW Mode / Mode A** faders E0–E7) → 14-bit / `(127<<7)`; Relative encoders → directional ticks × configurable step (default 2%).
-- **Feedback:** Layout controls may declare optional `feedback` (`mute` / `channelAssigned`, optional `style: blink`). Official presets stay hardware-only (no baked LEDs). `MidiOutputHub` sends Note/CC/PitchBend from the active layout; Pitch Bend faders use soft-takeover semantics. Edits are staged until Save. No device-brand branches in code.
-- **Presets:** Official JSON under `Presets/` may bake factory hardware (`controller`, `isNote`, `isPitchBend`, `defaultMode`) so reference devices like SMC-Mixer in **DAW Mode** need no Learn — only Sonar channel assignment. User DIY presets live in AppData `UserPresets/`. See [MIDI layout preset authoring](midi-preset-authoring.md) for the full JSON schema and hand-editing guide.
+- **Feedback:** Layout controls may declare optional `feedback` (`mute` / `channelAssigned`, optional `style: blink`). Official presets stay hardware-only (no baked LEDs). `MidiOutputHub` sends Note/CC/PitchBend from the active layout; Pitch Bend faders use soft-takeover semantics. UI edits are staged until Save (yellow chrome / per-field `*`). `MidiConfigController` shares `MidiControlService.Presets` so saved feedback is what the runtime refreshes. No device-brand branches in code.
+- **Presets:** Official JSON under `Presets/` may bake factory hardware (`controller`, `isNote`, `isPitchBend`, `defaultMode`) so reference devices like SMC-Mixer in **DAW Mode** need no Learn — only Sonar channel assignment. User DIY presets live in AppData `UserPresets/` (Save as… / Rename… / Delete). See [MIDI layout preset authoring](midi-preset-authoring.md) for the full JSON schema and hand-editing guide.
 - **Anti-fighting:** non-motorized absolute bindings remember hardware position; external Sonar drift starts a 3s window, then rolls back with overlay message.
-- **Blueprint UI:** `MidiConfigWindow` renders vector controls from declarative JSON (`Presets/` then `%LocalAppData%\Lixetron\SonarQuickMixer\UserPresets\`).
+- **Blueprint UI:** `MidiConfigWindow` (+ dark DWM title bar) renders vector controls from declarative JSON (`Presets/` then `%LocalAppData%\Lixetron\SonarQuickMixer\UserPresets\`).
 - **Mappings:** `%LocalAppData%\Lixetron\SonarQuickMixer\midi-mappings.json`.
 
 ## Sonar API layer
@@ -195,7 +195,7 @@ Sonar/
 | `Midi/MidiInputHub.cs` | Concurrent multi-device DryWetMidi listeners |
 | `Midi/FaderPriorityGuard.cs` | 3s hardware fader rollback / anti-fighting |
 | `Midi/PresetCatalog.cs` | Official + AppData layout JSON resolution |
-| `Views/MidiConfigWindow.xaml(.cs)` | Blueprint config UI and MIDI Learn |
+| `Views/MidiConfigWindow.xaml(.cs)` | Blueprint config UI, staging, Learn, dark title bar |
 | `Services/DiscordScreenshareEchoFixService.cs` / `Sonar/Models/SonarEchoFixRouting.cs` | Per-app Discord mute on WASAPI endpoints |
 | `Audio/*` | WASAPI device probes and channel level monitor |
 | `Views/MainWindow.xaml(.cs)` | Overlay shell; delegates mixer/settings logic to coordinators |
