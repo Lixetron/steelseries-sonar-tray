@@ -32,4 +32,16 @@ public class SonarChannelsTests
     {
         Assert.Equal(expected, SonarChannels.GetDisplayName(channel));
     }
+
+    [Theory]
+    [InlineData("game", "#02DDBC")]
+    [InlineData("chatRender", "#2DB1FC")]
+    [InlineData("CHATRENDER", "#2DB1FC")]
+    [InlineData("media", "#FF53B0")]
+    [InlineData("aux", "#8F51F4")]
+    [InlineData("master", "#D0D9F6")]
+    public void GetAccentHex_matches_steelseries_gg_sonar_tokens(string channel, string expected)
+    {
+        Assert.Equal(expected, SonarChannels.GetAccentHex(channel));
+    }
 }

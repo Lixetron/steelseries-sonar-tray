@@ -17,3 +17,6 @@ riderModule.iml
 *.suo
 *.user
 *.DotSettings.user
+
+# User DIY MIDI layouts live in %LocalAppData%\Lixetron\SonarQuickMixer\UserPresets\
+# (outside the repo). Official vendor maps ship from steelseries-sonar-tray/Presets/.

@@ -1,0 +1,1153 @@
+<Window x:Class="SonarQuickMixer.Views.MidiConfigWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:midi="clr-namespace:SonarQuickMixer.Midi"
+        xmlns:controls="clr-namespace:SonarQuickMixer.Controls"
+        Title="MIDI Setup — Sonar Quick Mixer"
+        Width="1180"
+        Height="820"
+        MinWidth="960"
+        MinHeight="600"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource SurfaceBrush}"
+        Foreground="{StaticResource TextPrimaryBrush}">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        <controls:FaderThumbOffsetConverter x:Key="FaderThumbOffsetConverter"/>
+
+        <Style x:Key="BlueprintDeleteButtonStyle" TargetType="Button">
+            <Setter Property="Width" Value="18"/>
+            <Setter Property="Height" Value="18"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="0,2,2,0"/>
+            <Setter Property="HorizontalAlignment" Value="Right"/>
+            <Setter Property="VerticalAlignment" Value="Top"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Content" Value="×"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="ToolTip" Value="Remove selected"/>
+            <Setter Property="Tag" Value="BlueprintDelete"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Background" Value="#CC8B1A1A"/>
+            <Setter Property="Foreground" Value="#FFFFFF"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                CornerRadius="9"
+                                Width="{TemplateBinding Width}"
+                                Height="{TemplateBinding Height}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#E0C62828"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <DataTemplate DataType="{x:Type midi:BlueprintDropSlotVm}">
+            <Border MinWidth="40"
+                    MinHeight="40"
+                    Margin="3"
+                    CornerRadius="7"
+                    BorderThickness="1.5"
+                    BorderBrush="{StaticResource AccentBrush}"
+                    Background="#1860CDFF"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Stretch"
+                    IsHitTestVisible="True"
+                    AllowDrop="True"
+                    DragOver="BlueprintDropSlot_DragOver"
+                    Drop="BlueprintDropSlot_Drop"
+                    DragLeave="BlueprintDropSlot_DragLeave">
+                <Grid>
+                    <Rectangle Stroke="{StaticResource AccentBrush}"
+                               StrokeThickness="1.5"
+                               StrokeDashArray="4 2.5"
+                               RadiusX="6"
+                               RadiusY="6"
+                               Margin="2"/>
+                    <TextBlock Text="+"
+                               FontSize="22"
+                               FontWeight="Light"
+                               Foreground="{StaticResource AccentBrush}"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"/>
+                </Grid>
+            </Border>
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type midi:BlueprintRegionVm}">
+            <Grid Margin="{Binding ChromeMargin}"
+                  MinWidth="{Binding ChromeMinWidth}"
+                  MinHeight="{Binding ChromeMinHeight}"
+                  HorizontalAlignment="Stretch"
+                  VerticalAlignment="Stretch"
+                  AllowDrop="True"
+                  PreviewMouseLeftButtonDown="ConstructorRegion_PreviewMouseLeftButtonDown"
+                  PreviewMouseMove="ConstructorRegion_PreviewMouseMove"
+                  DragOver="ConstructorRegion_DragOver"
+                  DragLeave="ConstructorRegion_DragLeave"
+                  Drop="ConstructorRegion_Drop"
+                  MouseLeftButtonUp="ConstructorRegion_Click">
+                <Border Padding="{Binding ChromePadding}"
+                        CornerRadius="10"
+                        BorderThickness="{Binding ChromeBorderThickness}"
+                        BorderBrush="{Binding BorderBrush}"
+                        Background="{Binding ChromeBackground}">
+                    <Grid>
+                        <DockPanel>
+                            <DockPanel DockPanel.Dock="Top"
+                                       Margin="0,0,0,6"
+                                       Visibility="{Binding HasHeaderChrome, Converter={StaticResource BoolToVis}}">
+                                <TextBlock Text="{Binding Label}"
+                                           FontWeight="SemiBold"
+                                           FontSize="12"
+                                           VerticalAlignment="Center"
+                                           Visibility="{Binding HasLabel, Converter={StaticResource BoolToVis}}"/>
+                                <TextBlock DockPanel.Dock="Right"
+                                           Text="{Binding DropHint}"
+                                           FontSize="10"
+                                           Foreground="{StaticResource AccentBrush}"
+                                           Visibility="{Binding HasDropHint, Converter={StaticResource BoolToVis}}"/>
+                            </DockPanel>
+                            <ItemsControl ItemsSource="{Binding Children}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <controls:MidiBlueprintCellPanel/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                            </ItemsControl>
+                        </DockPanel>
+
+                        <Grid IsHitTestVisible="False"
+                              Visibility="{Binding HasDropHint, Converter={StaticResource BoolToVis}}">
+                            <Border Background="#3360CDFF"
+                                    BorderBrush="{StaticResource AccentBrush}"
+                                    BorderThickness="2"
+                                    CornerRadius="8"
+                                    Visibility="{Binding DropHint, Converter={StaticResource MidiDropZoneToVisibilityConverter}, ConverterParameter=Inside}"/>
+                            <Border Width="8" HorizontalAlignment="Left" Background="#AA60CDFF"
+                                    Visibility="{Binding DropHint, Converter={StaticResource MidiDropZoneToVisibilityConverter}, ConverterParameter=Left}"/>
+                            <Border Width="8" HorizontalAlignment="Right" Background="#AA60CDFF"
+                                    Visibility="{Binding DropHint, Converter={StaticResource MidiDropZoneToVisibilityConverter}, ConverterParameter=Right}"/>
+                            <Border Height="8" VerticalAlignment="Top" Background="#AA60CDFF"
+                                    Visibility="{Binding DropHint, Converter={StaticResource MidiDropZoneToVisibilityConverter}, ConverterParameter=Top}"/>
+                            <Border Height="8" VerticalAlignment="Bottom" Background="#AA60CDFF"
+                                    Visibility="{Binding DropHint, Converter={StaticResource MidiDropZoneToVisibilityConverter}, ConverterParameter=Bottom}"/>
+                        </Grid>
+                    </Grid>
+                </Border>
+                <!-- Editor-only dashed outline when HideBorder is on (solid border is off). -->
+                <Rectangle IsHitTestVisible="False"
+                           Stroke="{Binding BorderBrush}"
+                           StrokeThickness="1.5"
+                           StrokeDashArray="4 2.5"
+                           RadiusX="10"
+                           RadiusY="10"
+                           Visibility="{Binding ShowDashedEditorOutline, Converter={StaticResource BoolToVis}}"/>
+                <Button Style="{StaticResource BlueprintDeleteButtonStyle}"
+                        Panel.ZIndex="40"
+                        Visibility="{Binding ShowDeleteButton, Converter={StaticResource BoolToVis}}"
+                        Click="BlueprintDeleteButton_Click"/>
+            </Grid>
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type midi:BlueprintControlVm}">
+            <Grid Margin="3"
+                  HorizontalAlignment="Stretch"
+                  VerticalAlignment="Stretch">
+            <Border Margin="0"
+                    Padding="5"
+                    CornerRadius="7"
+                    BorderThickness="{Binding BorderThickness}"
+                    BorderBrush="{Binding BorderBrush}"
+                    Cursor="Hand"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Stretch"
+                    ToolTip="{Binding BindingSummary}"
+                    AllowDrop="True"
+                    PreviewMouseLeftButtonDown="BlueprintControl_PreviewMouseLeftButtonDown"
+                    PreviewMouseMove="BlueprintControl_PreviewMouseMove"
+                    DragOver="BlueprintControl_DragOver"
+                    Drop="BlueprintControl_Drop"
+                    DragLeave="BlueprintControl_DragLeave"
+                    MouseLeftButtonUp="BlueprintControl_Click">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="Visibility" Value="Visible"/>
+                        <Setter Property="Opacity" Value="1"/>
+                        <Setter Property="Background" Value="{StaticResource SurfaceBrush}"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsPassive}" Value="True">
+                                <!-- Brighter than device-not-in-use dim (0.42); still reads as unused. -->
+                                <Setter Property="Opacity" Value="0.72"/>
+                                <Setter Property="Background" Value="#1A2A2A2A"/>
+                            </DataTrigger>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding IsPlaceholder}" Value="True"/>
+                                    <Condition Binding="{Binding DataContext.IsLayoutConstructorMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="False"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="Visibility" Value="Hidden"/>
+                                <Setter Property="IsHitTestVisible" Value="False"/>
+                            </MultiDataTrigger>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding IsPlaceholder}" Value="True"/>
+                                    <Condition Binding="{Binding DataContext.IsLayoutConstructorMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="Visibility" Value="Visible"/>
+                                <Setter Property="IsHitTestVisible" Value="True"/>
+                                <Setter Property="Opacity" Value="0.7"/>
+                                <Setter Property="MinHeight" Value="64"/>
+                                <Setter Property="MinWidth" Value="56"/>
+                                <Setter Property="BorderBrush" Value="#55FFFFFF"/>
+                                <Setter Property="Background" Value="#14FFFFFF"/>
+                            </MultiDataTrigger>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding Type}" Value="Fader"/>
+                                    <Condition Binding="{Binding TallFader}" Value="False"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="MinHeight" Value="120"/>
+                                <Setter Property="MinWidth" Value="48"/>
+                            </MultiDataTrigger>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding Type}" Value="Fader"/>
+                                    <Condition Binding="{Binding TallFader}" Value="True"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="MinHeight" Value="200"/>
+                                <Setter Property="MinWidth" Value="44"/>
+                                <Setter Property="Padding" Value="4"/>
+                            </MultiDataTrigger>
+                            <DataTrigger Binding="{Binding Type}" Value="Encoder">
+                                <Setter Property="MinHeight" Value="78"/>
+                                <Setter Property="MinWidth" Value="70"/>
+                            </DataTrigger>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding Type}" Value="Button"/>
+                                    <Condition Binding="{Binding Compact}" Value="False"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="MinHeight" Value="44"/>
+                                <Setter Property="MinWidth" Value="48"/>
+                            </MultiDataTrigger>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding Type}" Value="Button"/>
+                                    <Condition Binding="{Binding Compact}" Value="True"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="MinHeight" Value="34"/>
+                                <Setter Property="MinWidth" Value="36"/>
+                                <Setter Property="Padding" Value="3"/>
+                                <Setter Property="Margin" Value="2"/>
+                            </MultiDataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0"
+                               Text="+"
+                               FontSize="28"
+                               FontWeight="Light"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               Foreground="{StaticResource TextSecondaryBrush}">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsPlaceholder}" Value="True">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+
+                    <!-- Fader: fills the grid slot (RowSpan/ColSpan); thumb follows ActualHeight. -->
+                    <Grid Grid.Row="0"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Stretch"
+                          Width="28"
+                          MinHeight="{Binding FaderTrackHeight}"
+                          Visibility="{Binding Type, Converter={StaticResource MidiControlTypeToVisibilityConverter}, ConverterParameter=Fader}">
+                        <Grid.Style>
+                            <Style TargetType="Grid">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsPlaceholder}" Value="True">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Grid.Style>
+                        <Border Width="6"
+                                CornerRadius="3"
+                                Background="#33FFFFFF"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Stretch"/>
+                        <Border Width="22"
+                                Height="14"
+                                CornerRadius="3"
+                                Background="{StaticResource AccentBrush}"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Top">
+                            <Border.RenderTransform>
+                                <TranslateTransform>
+                                    <TranslateTransform.Y>
+                                        <MultiBinding Converter="{StaticResource FaderThumbOffsetConverter}">
+                                            <Binding Path="NormalizedValue"/>
+                                            <Binding Path="ActualHeight"
+                                                     RelativeSource="{RelativeSource AncestorType=Grid}"/>
+                                        </MultiBinding>
+                                    </TranslateTransform.Y>
+                                </TranslateTransform>
+                            </Border.RenderTransform>
+                        </Border>
+                    </Grid>
+
+                    <!-- Encoder -->
+                    <Grid Grid.Row="0" HorizontalAlignment="Center" VerticalAlignment="Center"
+                          Width="52" Height="52"
+                          Visibility="{Binding Type, Converter={StaticResource MidiControlTypeToVisibilityConverter}, ConverterParameter=Encoder}">
+                        <Grid.Style>
+                            <Style TargetType="Grid">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsPlaceholder}" Value="True">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Grid.Style>
+                        <Ellipse Stroke="#55FFFFFF" StrokeThickness="2" Fill="#22000000"/>
+                        <Ellipse Width="8" Height="8" Fill="{StaticResource AccentBrush}"
+                                 HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,5,0,0">
+                            <Ellipse.RenderTransform>
+                                <RotateTransform Angle="{Binding NeedleAngle}" CenterX="4" CenterY="21"/>
+                            </Ellipse.RenderTransform>
+                        </Ellipse>
+                        <Line X1="26" Y1="26" X2="26" Y2="9"
+                              Stroke="{StaticResource AccentBrush}" StrokeThickness="2"
+                              StrokeStartLineCap="Round" StrokeEndLineCap="Round">
+                            <Line.RenderTransform>
+                                <RotateTransform Angle="{Binding NeedleAngle}" CenterX="26" CenterY="26"/>
+                            </Line.RenderTransform>
+                        </Line>
+                    </Grid>
+
+                    <!-- Button -->
+                    <Border Grid.Row="0"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Center"
+                            CornerRadius="5"
+                            BorderBrush="#66FFFFFF"
+                            BorderThickness="1"
+                            Margin="2"
+                            Visibility="{Binding Type, Converter={StaticResource MidiControlTypeToVisibilityConverter}, ConverterParameter=Button}">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="#18FFFFFF"/>
+                                <Setter Property="Height" Value="32"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsPlaceholder}" Value="True">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Compact}" Value="True">
+                                        <Setter Property="Height" Value="26"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding IsPressed}" Value="True">
+                                        <Setter Property="Background" Value="#4060CDFF"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                    </Border>
+
+                    <StackPanel Grid.Row="1" Margin="0,4,0,0">
+                        <TextBlock Text="{Binding Label}"
+                                   FontSize="10"
+                                   FontWeight="SemiBold"
+                                   HorizontalAlignment="Center"
+                                   Foreground="{StaticResource TextPrimaryBrush}"/>
+                        <TextBlock Text="{Binding ChannelCaption}"
+                                   FontSize="8"
+                                   TextTrimming="CharacterEllipsis"
+                                   HorizontalAlignment="Center"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   MaxWidth="88"
+                                   Visibility="{Binding ShowChannelCaption, Converter={StaticResource BoolToVis}}"/>
+                    </StackPanel>
+
+                    <!-- DnD edge preview removed — insert slots are shown as BlueprintDropSlotVm. -->
+                </Grid>
+            </Border>
+            <Button Style="{StaticResource BlueprintDeleteButtonStyle}"
+                    Panel.ZIndex="40"
+                    Visibility="{Binding ShowDeleteButton, Converter={StaticResource BoolToVis}}"
+                    Click="BlueprintDeleteButton_Click"/>
+            <Border Panel.ZIndex="35"
+                    Width="14"
+                    Height="14"
+                    Margin="2,2,0,0"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Top"
+                    CornerRadius="7"
+                    Background="#F5C518"
+                    ToolTip="No hardware MIDI mapped — select the control and Learn"
+                    IsHitTestVisible="False"
+                    Visibility="{Binding ShowMissingHardwareWarning, Converter={StaticResource BoolToVis}}">
+                <TextBlock Text="!"
+                           FontSize="10"
+                           FontWeight="Bold"
+                           Foreground="#1A1200"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           Margin="0,-1,0,0"/>
+            </Border>
+            </Grid>
+        </DataTemplate>
+
+    </Window.Resources>
+
+    <Grid Margin="16">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="280"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Left: device list only -->
+        <Border Grid.Column="0"
+                Background="{StaticResource SurfaceBrush}"
+                BorderBrush="{StaticResource BorderBrush}"
+                BorderThickness="1"
+                CornerRadius="10"
+                Padding="12"
+                Margin="0,0,12,0">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Top"
+                           Text="MIDI Devices"
+                           FontSize="13"
+                           FontWeight="SemiBold"
+                           Margin="0,0,0,4"/>
+                <TextBlock DockPanel.Dock="Top"
+                           Text="Gray = not used. Duplicates like MIDIIN2 are hidden automatically."
+                           FontSize="10"
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,8"/>
+                <CheckBox DockPanel.Dock="Top"
+                          Content="Show hidden / duplicates"
+                          Style="{StaticResource FluentToggleStyle}"
+                          IsChecked="{Binding ShowHiddenDevices, Mode=TwoWay}"
+                          Margin="0,0,0,10"
+                          ToolTip="Show ports that were auto-hidden (e.g. MIDIIN2) or manually hidden"/>
+
+                <ListBox x:Name="DevicesList"
+                         ItemsSource="{Binding Devices}"
+                         Background="Transparent"
+                         BorderThickness="0"
+                         SelectionChanged="DevicesList_SelectionChanged"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                    <ListBox.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="Hide this port"
+                                      Click="HideDeviceMenuItem_Click"/>
+                            <MenuItem Header="Show this port"
+                                      Click="RevealDeviceMenuItem_Click"/>
+                        </ContextMenu>
+                    </ListBox.ContextMenu>
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem">
+                            <Setter Property="Padding" Value="6,8"/>
+                            <Setter Property="Margin" Value="0,1"/>
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                            <Setter Property="Cursor" Value="Hand"/>
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <DockPanel>
+                                <TextBlock DockPanel.Dock="Right"
+                                           Text="{Binding StatusLabel}"
+                                           FontSize="10"
+                                           Foreground="{Binding NameForeground}"
+                                           VerticalAlignment="Center"
+                                           Margin="8,0,0,0"/>
+                                <TextBlock Text="{Binding Name}"
+                                           FontSize="12"
+                                           TextWrapping="Wrap"
+                                           Foreground="{Binding NameForeground}"/>
+                            </DockPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
+        </Border>
+
+        <!-- Right: selected device workspace -->
+        <Grid Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <StackPanel Grid.Row="0" Margin="0,0,0,12">
+                <DockPanel LastChildFill="True">
+                    <StackPanel DockPanel.Dock="Right"
+                                Margin="12,0,0,0"
+                                MinWidth="140"
+                                VerticalAlignment="Top">
+                        <Button Content="{Binding UseDeviceButtonText}"
+                                Style="{StaticResource FluentAccentButtonStyle}"
+                                HorizontalAlignment="Stretch"
+                                IsEnabled="{Binding HasSelectedDevice}"
+                                Click="UseDeviceButton_Click"/>
+                        <Button Content="Edit layout"
+                                Style="{StaticResource FluentButtonStyle}"
+                                Margin="0,8,0,0"
+                                HorizontalAlignment="Stretch"
+                                IsEnabled="{Binding HasSelectedDevice}"
+                                ToolTip="Open the layout constructor to add/move/remove controls on the grid"
+                                Click="EditLayoutButton_Click"
+                                Visibility="{Binding IsLayoutConstructorMode, Converter={StaticResource InverseBoolToVis}}"/>
+                        <Button Content="Reset all bindings"
+                                Style="{StaticResource FluentDangerButtonStyle}"
+                                Margin="0,8,0,0"
+                                HorizontalAlignment="Stretch"
+                                IsEnabled="{Binding HasSelectedDevice}"
+                                ToolTip="Clear this device's hardware mappings and Sonar assignments, then restore the factory map"
+                                Click="ResetAllBindingsButton_Click"
+                                Visibility="{Binding IsLayoutConstructorMode, Converter={StaticResource InverseBoolToVis}}"/>
+                    </StackPanel>
+                    <StackPanel>
+                        <DockPanel>
+                            <TextBlock Text="{Binding LayoutName}"
+                                       FontSize="16"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock DockPanel.Dock="Right"
+                                       Text="Select device → Use device → assign channels → Save changes"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       FontSize="11"
+                                       VerticalAlignment="Center"
+                                       Margin="12,0,0,0"/>
+                        </DockPanel>
+                        <TextBlock Text="{Binding LayoutHint}"
+                                   Margin="0,8,0,0"
+                                   FontSize="11"
+                                   TextWrapping="Wrap"
+                                   Foreground="{StaticResource TextSecondaryBrush}"/>
+                    </StackPanel>
+                </DockPanel>
+
+                <!-- Layout presets for the selected device (not in the device list) -->
+                <Border Margin="0,12,0,0"
+                        Padding="10,8"
+                        CornerRadius="8"
+                        Background="{StaticResource SurfaceBrush}"
+                        BorderBrush="{StaticResource BorderBrush}"
+                        BorderThickness="1"
+                        IsEnabled="{Binding HasSelectedDevice}">
+                    <DockPanel LastChildFill="True">
+                        <TextBlock DockPanel.Dock="Left"
+                                   Text="Layout preset"
+                                   FontSize="11"
+                                   FontWeight="SemiBold"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,10,0"/>
+                        <StackPanel DockPanel.Dock="Right"
+                                    Orientation="Horizontal"
+                                    VerticalAlignment="Center"
+                                    Margin="10,0,0,0">
+                            <Button Content="Save as…"
+                                    Style="{StaticResource FluentButtonStyle}"
+                                    Margin="0,0,6,0"
+                                    ToolTip="Save the current layout as a new named user preset"
+                                    Click="SavePresetAsButton_Click"/>
+                            <Button Content="Rename…"
+                                    Style="{StaticResource FluentButtonStyle}"
+                                    Margin="0,0,6,0"
+                                    IsEnabled="{Binding CanRenameSelectedLayoutPreset}"
+                                    ToolTip="Rename the selected user preset (same file). Official presets are read-only — use Save as… first."
+                                    Click="RenamePresetButton_Click"/>
+                            <Button Content="Export…"
+                                    Style="{StaticResource FluentButtonStyle}"
+                                    Margin="0,0,6,0"
+                                    ToolTip="Export the current layout JSON"
+                                    Click="ExportLayoutButton_Click"/>
+                            <Button Content="Import…"
+                                    Style="{StaticResource FluentButtonStyle}"
+                                    Margin="0,0,6,0"
+                                    ToolTip="Import a layout JSON as a new user preset"
+                                    Click="ImportLayoutButton_Click"/>
+                            <Button Content="Delete"
+                                    Style="{StaticResource FluentDangerButtonStyle}"
+                                    IsEnabled="{Binding CanDeleteSelectedLayoutPreset}"
+                                    ToolTip="Delete the selected user layout JSON file"
+                                    Click="DeleteUserPreset_Click"
+                                    Visibility="{Binding IsLayoutConstructorMode, Converter={StaticResource InverseBoolToVis}}"/>
+                        </StackPanel>
+                        <ComboBox ItemsSource="{Binding LayoutPresets}"
+                                  SelectedItem="{Binding SelectedLayoutPreset, Mode=TwoWay}"
+                                  DisplayMemberPath="DisplayName"
+                                  Style="{StaticResource FluentComboBoxStyle}"
+                                  VerticalAlignment="Center"
+                                  ToolTip="Official and user layouts for this device"/>
+                    </DockPanel>
+                </Border>
+
+                <TextBlock Text="{Binding StatusText}"
+                           Margin="0,8,0,0"
+                           FontSize="11"
+                           TextWrapping="Wrap"
+                           Foreground="{StaticResource TextSecondaryBrush}"/>
+            </StackPanel>
+
+            <Grid Grid.Row="1">
+                <Border Background="{StaticResource SurfaceAltBrush}"
+                        BorderBrush="{StaticResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="10"
+                        Padding="8">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Opacity" Value="1"/>
+                            <Setter Property="IsHitTestVisible" Value="True"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsBlueprintInteractive}" Value="False">
+                                    <Setter Property="Opacity" Value="0.42"/>
+                                    <Setter Property="IsHitTestVisible" Value="False"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <ScrollViewer x:Name="BlueprintScrollViewer"
+                                  HorizontalScrollBarVisibility="Auto"
+                                  VerticalScrollBarVisibility="Auto"
+                                  Style="{StaticResource FluentScrollViewerStyle}"
+                                  PreviewMouseWheel="BlueprintScrollViewer_PreviewMouseWheel">
+                        <!-- Fill the viewport so the device can be centered when it is smaller than the pane. -->
+                        <Grid MinWidth="{Binding ViewportWidth, RelativeSource={RelativeSource AncestorType=ScrollViewer}}"
+                              MinHeight="{Binding ViewportHeight, RelativeSource={RelativeSource AncestorType=ScrollViewer}}"
+                              AllowDrop="True"
+                              DragOver="BlueprintCanvas_DragOver"
+                              Drop="BlueprintCanvas_Drop"
+                              DragLeave="BlueprintCanvas_DragLeave">
+                            <Grid x:Name="BlueprintZoomHost"
+                                  HorizontalAlignment="Center"
+                                  VerticalAlignment="Center">
+                                <Grid.LayoutTransform>
+                                    <ScaleTransform ScaleX="{Binding BlueprintZoom}"
+                                                    ScaleY="{Binding BlueprintZoom}"/>
+                                </Grid.LayoutTransform>
+                                <ItemsControl x:Name="ConstructorTree"
+                                              ItemsSource="{Binding ConstructorRoots}"
+                                              HorizontalAlignment="Center"
+                                              VerticalAlignment="Center">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <controls:MidiBlueprintCellPanel/>
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                </ItemsControl>
+                            </Grid>
+                        </Grid>
+                    </ScrollViewer>
+                </Border>
+
+                <!-- Always clickable zoom chrome (even when the map is dimmed / preview-only). -->
+                <Border HorizontalAlignment="Right"
+                        VerticalAlignment="Top"
+                        Margin="0,14,14,0"
+                        Padding="4"
+                        CornerRadius="8"
+                        Background="#CC1A1A1A"
+                        BorderBrush="{StaticResource BorderBrush}"
+                        BorderThickness="1"
+                        Panel.ZIndex="30">
+                    <StackPanel Orientation="Horizontal">
+                        <Button Content="−"
+                                Width="28"
+                                Height="28"
+                                Padding="0"
+                                FontSize="16"
+                                FontWeight="SemiBold"
+                                Style="{StaticResource FluentButtonStyle}"
+                                ToolTip="Zoom out (Ctrl+scroll)"
+                                IsEnabled="{Binding CanZoomBlueprintOut}"
+                                Click="BlueprintZoomOut_Click"/>
+                        <Button Content="{Binding BlueprintZoomPercent}"
+                                MinWidth="48"
+                                Height="28"
+                                Margin="4,0"
+                                Padding="6,0"
+                                FontSize="11"
+                                Style="{StaticResource FluentButtonStyle}"
+                                ToolTip="Reset zoom to 100%"
+                                Click="BlueprintZoomReset_Click"/>
+                        <Button Content="+"
+                                Width="28"
+                                Height="28"
+                                Padding="0"
+                                FontSize="16"
+                                FontWeight="SemiBold"
+                                Style="{StaticResource FluentButtonStyle}"
+                                ToolTip="Zoom in (Ctrl+scroll)"
+                                IsEnabled="{Binding CanZoomBlueprintIn}"
+                                Click="BlueprintZoomIn_Click"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <!-- Binding inspector (normal mode) -->
+            <Border Grid.Row="2"
+                    Margin="0,12,0,0"
+                    Background="{StaticResource SurfaceBrush}"
+                    BorderBrush="{StaticResource BorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="10"
+                    Padding="12"
+                    IsEnabled="{Binding CanEditBindings}"
+                    Visibility="{Binding IsLayoutConstructorMode, Converter={StaticResource InverseBoolToVis}}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="1.4*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,8,0">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                            <TextBlock Text="Channel"
+                                       FontSize="11"
+                                       Foreground="{StaticResource TextSecondaryBrush}"/>
+                            <TextBlock Text="*"
+                                       FontSize="12"
+                                       FontWeight="Bold"
+                                       Foreground="#FFE04A"
+                                       Margin="3,0,0,0"
+                                       ToolTip="Unsaved channel change"
+                                       Visibility="{Binding InspectorChannelDirty, Converter={StaticResource BoolToVis}}"/>
+                        </StackPanel>
+                        <ComboBox x:Name="ChannelCombo" Style="{StaticResource FluentComboBoxStyle}"/>
+                    </StackPanel>
+                    <StackPanel Grid.Row="0" Grid.Column="1" Margin="0,0,8,0">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                            <TextBlock Text="Mode"
+                                       FontSize="11"
+                                       Foreground="{StaticResource TextSecondaryBrush}"/>
+                            <TextBlock Text="*"
+                                       FontSize="12"
+                                       FontWeight="Bold"
+                                       Foreground="#FFE04A"
+                                       Margin="3,0,0,0"
+                                       ToolTip="Unsaved mode change"
+                                       Visibility="{Binding InspectorModeDirty, Converter={StaticResource BoolToVis}}"/>
+                        </StackPanel>
+                        <ComboBox x:Name="ModeCombo" Style="{StaticResource FluentComboBoxStyle}">
+                            <ComboBoxItem Content="Absolute (0–127 position)" Tag="Absolute"/>
+                            <ComboBoxItem Content="Relative (delta ticks)" Tag="Relative"/>
+                        </ComboBox>
+                    </StackPanel>
+                    <StackPanel Grid.Row="0" Grid.Column="2" Margin="0,0,8,0">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                            <TextBlock Text="Action"
+                                       FontSize="11"
+                                       Foreground="{StaticResource TextSecondaryBrush}"/>
+                            <TextBlock Text="*"
+                                       FontSize="12"
+                                       FontWeight="Bold"
+                                       Foreground="#FFE04A"
+                                       Margin="3,0,0,0"
+                                       ToolTip="Unsaved action change"
+                                       Visibility="{Binding InspectorActionDirty, Converter={StaticResource BoolToVis}}"/>
+                        </StackPanel>
+                        <ComboBox x:Name="ActionCombo" Style="{StaticResource FluentComboBoxStyle}"
+                                  ToolTip="Faders/encoders: None or Volume. Buttons: None or Mute toggle."/>
+                    </StackPanel>
+                    <StackPanel Grid.Row="0" Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Bottom">
+                        <Button Content="Save changes"
+                                Style="{StaticResource FluentAccentButtonStyle}"
+                                Margin="0,0,8,0"
+                                IsEnabled="{Binding CanSaveBindingDrafts}"
+                                ToolTip="Persist staged channel / mode / action assignments and LED feedback into the active preset"
+                                Click="SaveBindingDraftsButton_Click"/>
+                        <Button Content="Discard"
+                                Style="{StaticResource FluentButtonStyle}"
+                                Margin="0,0,8,0"
+                                IsEnabled="{Binding HasUnsavedBindingDrafts}"
+                                ToolTip="Revert staged assignments and LED feedback to the last saved preset"
+                                Click="DiscardBindingDraftsButton_Click"/>
+                        <Button Content="Reset binding"
+                                Style="{StaticResource FluentDangerButtonStyle}"
+                                ToolTip="Clear hardware recognition and Sonar assignment (saved immediately)"
+                                Click="ClearBindingButton_Click"/>
+                    </StackPanel>
+                    <StackPanel Grid.Row="1"
+                                Grid.Column="0"
+                                Grid.ColumnSpan="2"
+                                Margin="0,12,8,0"
+                                x:Name="FeedbackPanelPanel">
+                        <TextBlock Text="LED feedback"
+                                   FontSize="11"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   Margin="0,0,0,4"
+                                   ToolTip="Host→device lamp. Source = when it lights. Style = solid or blink (pads/encoders only). Faders: Off or Channel assigned (soft-takeover; hardware blinks while Sonar ≠ physical fader). Staged until Save changes."/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" Margin="0,0,0,4">
+                                <TextBlock Text="Source"
+                                           FontSize="11"
+                                           Foreground="{StaticResource TextSecondaryBrush}"/>
+                                <TextBlock Text="*"
+                                           FontSize="12"
+                                           FontWeight="Bold"
+                                           Foreground="#FFE04A"
+                                           Margin="3,0,0,0"
+                                           ToolTip="Unsaved LED source change"
+                                           Visibility="{Binding InspectorFeedbackSourceDirty, Converter={StaticResource BoolToVis}}"/>
+                            </StackPanel>
+                            <StackPanel Grid.Row="0" Grid.Column="2" Orientation="Horizontal" Margin="0,0,0,4">
+                                <TextBlock Text="Style"
+                                           FontSize="11"
+                                           Foreground="{StaticResource TextSecondaryBrush}"/>
+                                <TextBlock Text="*"
+                                           FontSize="12"
+                                           FontWeight="Bold"
+                                           Foreground="#FFE04A"
+                                           Margin="3,0,0,0"
+                                           ToolTip="Unsaved LED style change"
+                                           Visibility="{Binding InspectorFeedbackStyleDirty, Converter={StaticResource BoolToVis}}"/>
+                            </StackPanel>
+                            <ComboBox x:Name="FeedbackSourceCombo"
+                                      Grid.Row="1"
+                                      Grid.Column="0"
+                                      Style="{StaticResource FluentComboBoxStyle}"
+                                      ToolTip="When the lamp reacts (staged — Save changes to apply)."
+                                      SelectionChanged="FeedbackSourceCombo_SelectionChanged"/>
+                            <ComboBox x:Name="FeedbackStyleCombo"
+                                      Grid.Row="1"
+                                      Grid.Column="2"
+                                      Style="{StaticResource FluentComboBoxStyle}"
+                                      ToolTip="Solid or blink while the source condition is active (pads/encoders)."
+                                      SelectionChanged="FeedbackStyleCombo_SelectionChanged">
+                                <ComboBoxItem Content="Solid" Tag="Solid"/>
+                                <ComboBoxItem Content="Blink" Tag="Blink"/>
+                            </ComboBox>
+                        </Grid>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Layout constructor palette / actions -->
+            <Border Grid.Row="2"
+                    Margin="0,12,0,0"
+                    Background="{StaticResource SurfaceBrush}"
+                    BorderBrush="{StaticResource BorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="10"
+                    Padding="12"
+                    Visibility="{Binding IsLayoutConstructorMode, Converter={StaticResource BoolToVis}}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                        <TextBlock Text="Palette — drop onto areas (edge = beside, center = inside)"
+                                   FontSize="11"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   Margin="0,0,0,8"/>
+                        <StackPanel Orientation="Horizontal">
+                            <Border Margin="0,0,8,0"
+                                    Padding="10,8"
+                                    CornerRadius="8"
+                                    Background="#2860CDFF"
+                                    BorderBrush="{StaticResource AccentBrush}"
+                                    BorderThickness="1"
+                                    Cursor="Hand"
+                                    Tag="Area"
+                                    ToolTip="Nestable area / group"
+                                    PreviewMouseLeftButtonDown="PaletteItem_PreviewMouseLeftButtonDown"
+                                    MouseLeftButtonUp="PaletteItem_Click">
+                                <TextBlock Text="Area" FontWeight="SemiBold"/>
+                            </Border>
+                            <Border Margin="0,0,8,0"
+                                    Padding="10,8"
+                                    CornerRadius="8"
+                                    Background="#28FFFFFF"
+                                    BorderBrush="{StaticResource BorderBrush}"
+                                    BorderThickness="1"
+                                    Cursor="Hand"
+                                    Tag="Encoder"
+                                    ToolTip="Endless / relative knob"
+                                    PreviewMouseLeftButtonDown="PaletteItem_PreviewMouseLeftButtonDown"
+                                    MouseLeftButtonUp="PaletteItem_Click">
+                                <TextBlock Text="Encoder" FontWeight="SemiBold"/>
+                            </Border>
+                            <Border Margin="0,0,8,0"
+                                    Padding="10,8"
+                                    CornerRadius="8"
+                                    Background="#28FFFFFF"
+                                    BorderBrush="{StaticResource BorderBrush}"
+                                    BorderThickness="1"
+                                    Cursor="Hand"
+                                    Tag="Fader"
+                                    ToolTip="Absolute fader"
+                                    PreviewMouseLeftButtonDown="PaletteItem_PreviewMouseLeftButtonDown"
+                                    MouseLeftButtonUp="PaletteItem_Click">
+                                <TextBlock Text="Fader" FontWeight="SemiBold"/>
+                            </Border>
+                            <Border Padding="10,8"
+                                    CornerRadius="8"
+                                    Background="#28FFFFFF"
+                                    BorderBrush="{StaticResource BorderBrush}"
+                                    BorderThickness="1"
+                                    Cursor="Hand"
+                                    Tag="Button"
+                                    ToolTip="Button / note"
+                                    PreviewMouseLeftButtonDown="PaletteItem_PreviewMouseLeftButtonDown"
+                                    MouseLeftButtonUp="PaletteItem_Click">
+                                <TextBlock Text="Button" FontWeight="SemiBold"/>
+                            </Border>
+                        </StackPanel>
+                        <DockPanel Margin="0,10,0,0">
+                            <TextBlock DockPanel.Dock="Left"
+                                       Text="Label"
+                                       FontSize="11"
+                                       VerticalAlignment="Center"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       Margin="0,0,8,0"/>
+                            <TextBox Text="{Binding DraftControlLabel, UpdateSourceTrigger=PropertyChanged}"
+                                     Style="{StaticResource FluentTextBoxStyle}"
+                                     ToolTip="Optional caption for the selected control/area (Enter / focus leave). Empty = no title on areas. Also used for the next palette drop."
+                                     LostFocus="DraftLabelBox_LostFocus"
+                                     KeyDown="DraftLabelBox_KeyDown"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,8,0,0"
+                                   IsEnabled="{Binding DraftFeedbackEnabled}">
+                            <TextBlock DockPanel.Dock="Left"
+                                       Text="LED"
+                                       FontSize="11"
+                                       VerticalAlignment="Center"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       Margin="0,0,8,0"
+                                       ToolTip="Host→device lamp. Source + style. Faders: Off or Channel assigned only. Saved with Save layout."/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="8"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <ComboBox x:Name="DraftFeedbackSourceCombo"
+                                          Grid.Column="0"
+                                          Style="{StaticResource FluentComboBoxStyle}"
+                                          SelectionChanged="DraftFeedbackSource_SelectionChanged"/>
+                                <ComboBox x:Name="DraftFeedbackStyleCombo"
+                                          Grid.Column="2"
+                                          Style="{StaticResource FluentComboBoxStyle}"
+                                          IsEnabled="{Binding DraftFeedbackStyleEnabled}"
+                                          SelectionChanged="DraftFeedbackStyle_SelectionChanged">
+                                    <ComboBoxItem Content="Solid" Tag="Solid"/>
+                                    <ComboBoxItem Content="Blink" Tag="Blink"/>
+                                </ComboBox>
+                            </Grid>
+                        </DockPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                            <TextBlock Text="ColSpan"
+                                       FontSize="11"
+                                       VerticalAlignment="Center"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       Margin="0,0,6,0"
+                                       ToolTip="How many columns this control/area occupies in its parent grid"/>
+                            <Button Content="−"
+                                    Style="{StaticResource FluentButtonStyle}"
+                                    Width="32"
+                                    Margin="0,0,4,0"
+                                    Click="DraftColSpanMinus_Click"/>
+                            <TextBox Text="{Binding DraftColSpan, UpdateSourceTrigger=PropertyChanged}"
+                                     Style="{StaticResource FluentTextBoxStyle}"
+                                     Width="40"
+                                     TextAlignment="Center"
+                                     ToolTip="Columns spanned (1–16). For a wide fader try 2+."
+                                     LostFocus="DraftSpanBox_LostFocus"
+                                     KeyDown="DraftSpanBox_KeyDown"/>
+                            <Button Content="+"
+                                    Style="{StaticResource FluentButtonStyle}"
+                                    Width="32"
+                                    Margin="4,0,16,0"
+                                    Click="DraftColSpanPlus_Click"/>
+                            <TextBlock Text="RowSpan"
+                                       FontSize="11"
+                                       VerticalAlignment="Center"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       Margin="0,0,6,0"
+                                       ToolTip="How many rows this control/area occupies in its parent grid"/>
+                            <Button Content="−"
+                                    Style="{StaticResource FluentButtonStyle}"
+                                    Width="32"
+                                    Margin="0,0,4,0"
+                                    Click="DraftRowSpanMinus_Click"/>
+                            <TextBox Text="{Binding DraftRowSpan, UpdateSourceTrigger=PropertyChanged}"
+                                     Style="{StaticResource FluentTextBoxStyle}"
+                                     Width="40"
+                                     TextAlignment="Center"
+                                     ToolTip="Rows spanned (1–16). Tall faders in the factory map use 4."
+                                     LostFocus="DraftSpanBox_LostFocus"
+                                     KeyDown="DraftSpanBox_KeyDown"/>
+                            <Button Content="+"
+                                    Style="{StaticResource FluentButtonStyle}"
+                                    Width="32"
+                                    Margin="4,0,0,0"
+                                    Click="DraftRowSpanPlus_Click"/>
+                        </StackPanel>
+                        <CheckBox Content="Hide border"
+                                  Margin="0,10,0,0"
+                                  Style="{StaticResource FluentToggleStyle}"
+                                  IsChecked="{Binding DraftHideBorder, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                  IsEnabled="{Binding DraftHideBorderEnabled}"
+                                  ToolTip="Area only: no solid outline in normal view. In the constructor a dashed outline still shows so you can edit the zone."
+                                  Checked="DraftHideBorder_Click"
+                                  Unchecked="DraftHideBorder_Click"/>
+                        <CheckBox Content="Keep spacing"
+                                  Margin="0,8,0,0"
+                                  Style="{StaticResource FluentToggleStyle}"
+                                  IsChecked="{Binding DraftKeepSpacing, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                  IsEnabled="{Binding DraftKeepSpacingEnabled}"
+                                  ToolTip="With Hide border: keep a modest gap around this area (e.g. separate channel strips or the transport row) instead of collapsing nested margins to zero."
+                                  Checked="DraftKeepSpacing_Click"
+                                  Unchecked="DraftKeepSpacing_Click"/>
+                        <DockPanel Margin="0,8,0,0"
+                                   IsEnabled="{Binding DraftContentJustifyEnabled}">
+                            <TextBlock DockPanel.Dock="Left"
+                                       Text="H"
+                                       FontSize="11"
+                                       VerticalAlignment="Center"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       Margin="0,0,6,0"
+                                       ToolTip="Horizontal justify (flex): how children fill extra width when the area stretches."/>
+                            <ComboBox SelectedValue="{Binding DraftContentJustify, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                      SelectedValuePath="Tag"
+                                      Style="{StaticResource FluentComboBoxStyle}"
+                                      ToolTip="Pack = together at start. Space between = equal gaps between items. Space evenly = equal gaps including edges."
+                                      SelectionChanged="DraftContentJustify_SelectionChanged">
+                                <ComboBoxItem Content="Pack" Tag="{x:Static midi:MidiContentJustify.Pack}"/>
+                                <ComboBoxItem Content="Space between" Tag="{x:Static midi:MidiContentJustify.SpaceBetween}"/>
+                                <ComboBoxItem Content="Space evenly" Tag="{x:Static midi:MidiContentJustify.SpaceEvenly}"/>
+                            </ComboBox>
+                        </DockPanel>
+                        <DockPanel Margin="0,6,0,0"
+                                   IsEnabled="{Binding DraftContentJustifyEnabled}">
+                            <TextBlock DockPanel.Dock="Left"
+                                       Text="V"
+                                       FontSize="11"
+                                       VerticalAlignment="Center"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       Margin="0,0,6,0"
+                                       ToolTip="Vertical align (flex): how children fill extra height when the area stretches."/>
+                            <ComboBox SelectedValue="{Binding DraftContentAlign, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                      SelectedValuePath="Tag"
+                                      Style="{StaticResource FluentComboBoxStyle}"
+                                      ToolTip="Pack = together at top. Space between = equal gaps between rows. Space evenly = equal gaps including top/bottom edges."
+                                      SelectionChanged="DraftContentJustify_SelectionChanged">
+                                <ComboBoxItem Content="Pack" Tag="{x:Static midi:MidiContentJustify.Pack}"/>
+                                <ComboBoxItem Content="Space between" Tag="{x:Static midi:MidiContentJustify.SpaceBetween}"/>
+                                <ComboBoxItem Content="Space evenly" Tag="{x:Static midi:MidiContentJustify.SpaceEvenly}"/>
+                            </ComboBox>
+                        </DockPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                            <Button x:Name="LearnButton"
+                                    Content="Learn MIDI"
+                                    Style="{StaticResource FluentAccentButtonStyle}"
+                                    Margin="0,0,8,0"
+                                    ToolTip="Map hardware CC/Note/Pitch Bend to the selected control"
+                                    Click="LearnButton_Click"/>
+                            <Button x:Name="CancelLearnButton"
+                                    Content="Cancel Learn"
+                                    Style="{StaticResource FluentButtonStyle}"
+                                    IsEnabled="False"
+                                    ToolTip="Stop listening without changing the binding"
+                                    Click="CancelLearnButton_Click"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1" Orientation="Vertical" VerticalAlignment="Bottom">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button Content="Cancel"
+                                    Style="{StaticResource FluentButtonStyle}"
+                                    Margin="0,0,8,0"
+                                    Click="CancelLayoutConstructor_Click"/>
+                            <Button Content="Save layout"
+                                    Style="{StaticResource FluentAccentButtonStyle}"
+                                    Click="SaveLayoutConstructor_Click"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- Conflict modal overlay -->
+        <Border x:Name="ConflictOverlay"
+                Grid.ColumnSpan="2"
+                Background="#CC101010"
+                Visibility="Collapsed"
+                CornerRadius="8">
+            <Border Background="{StaticResource SurfaceBrush}"
+                    BorderBrush="{StaticResource BorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="10"
+                    Padding="20"
+                    MaxWidth="420"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Center">
+                <StackPanel>
+                    <TextBlock Text="Volume fighting risk"
+                               FontSize="15"
+                               FontWeight="SemiBold"
+                               Margin="0,0,0,10"/>
+                    <TextBlock x:Name="ConflictMessageText"
+                               TextWrapping="Wrap"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               Margin="0,0,0,16"
+                               Text="Are you sure? Multiple non-motorized faders on one channel will cause volume fighting."/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Content="Cancel"
+                                Style="{StaticResource FluentButtonStyle}"
+                                Margin="0,0,8,0"
+                                Click="ConflictCancel_Click"/>
+                        <Button Content="Yes, I am sure"
+                                Style="{StaticResource FluentAccentButtonStyle}"
+                                Click="ConflictConfirm_Click"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Border>
+    </Grid>
+</Window>

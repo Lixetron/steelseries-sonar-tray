@@ -5,6 +5,7 @@ using System.Windows.Input;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using SonarQuickMixer.Audio;
+using SonarQuickMixer.Midi;
 using SonarQuickMixer.Mixing;
 using SonarQuickMixer.Services;
 using SonarQuickMixer.Settings;
@@ -34,6 +35,8 @@ public partial class MainWindow : Window
     private readonly GitHubUpdateChecker _updateChecker = new();
     private readonly AppSettings _settings;
     private readonly MediaKeysOverrideService _mediaKeysOverride;
+    private readonly MidiControlService? _midiControl;
+    private readonly Action? _openMidiSetup;
     private readonly VolumeOverlayService _volumeOverlay;
     private readonly MixerControlRegistry _mixerRegistry = new();
     private readonly MixerSnapshotCoordinator _mixerSnapshot;
@@ -56,10 +59,14 @@ public partial class MainWindow : Window
         MediaKeysOverrideService mediaKeysOverride,
         DiscordScreenshareEchoFixService discordScreenshareEchoFix,
         VolumeOverlayService volumeOverlay,
-        Action applyTrayIcon)
+        Action applyTrayIcon,
+        MidiControlService? midiControl = null,
+        Action? openMidiSetup = null)
     {
         _settings = settings;
         _mediaKeysOverride = mediaKeysOverride;
+        _midiControl = midiControl;
+        _openMidiSetup = openMidiSetup;
         _volumeOverlay = volumeOverlay;
 
         InitializeComponent();
@@ -86,7 +93,9 @@ public partial class MainWindow : Window
             AudioVisualizerToggle,
             MediaKeysOverrideChannelCombo,
             MediaKeysOverrideChannelPanel,
-            TrayIconStyleCombo);
+            TrayIconStyleCombo,
+            _midiControl,
+            MidiEnabledToggle);
         _updateNotification = new UpdateNotificationController(
             _updateChecker,
             SettingsVersionText,
@@ -122,11 +131,20 @@ public partial class MainWindow : Window
         _backgroundSyncTimer.Start();
 
         _settingsPanel.InitializeFromSettings();
-        _mediaKeysOverride.MixerChanged += MediaKeysOverride_MixerChanged;
+        _mediaKeysOverride.MixerChanged += ExternalMixerChanged;
+        if (_midiControl is not null)
+        {
+            _midiControl.MixerChanged += ExternalMixerChanged;
+        }
 
         Closed += (_, _) =>
         {
-            _mediaKeysOverride.MixerChanged -= MediaKeysOverride_MixerChanged;
+            _mediaKeysOverride.MixerChanged -= ExternalMixerChanged;
+            if (_midiControl is not null)
+            {
+                _midiControl.MixerChanged -= ExternalMixerChanged;
+            }
+
             _settingsPanel.SyncFeatureSettingsFromUi();
             _settings.Save();
             _levelPollTimer.Stop();
@@ -607,6 +625,11 @@ public partial class MainWindow : Window
     }
 
     private void OpenSettingsButton_Click(object sender, RoutedEventArgs e) => _ = ShowSettingsViewAsync();
+
+    private void OpenMidiSetupButton_Click(object sender, RoutedEventArgs e)
+    {
+        _openMidiSetup?.Invoke();
+    }
     private void UpdateNotificationDot_Click(object sender, MouseButtonEventArgs e) { e.Handled = true; _updateNotification.OpenReleasePage(); }
     private void OpenReleaseButton_Click(object sender, RoutedEventArgs e) => _updateNotification.OpenReleasePage();
     private void BackToMixerButton_Click(object sender, RoutedEventArgs e) => _ = ShowMixerViewAsync();
@@ -794,7 +817,7 @@ public partial class MainWindow : Window
     private void TrayIconStyleCombo_SelectionChanged(object sender, SelectionChangedEventArgs e) =>
         _settingsPanel.OnTrayIconStyleChanged();
 
-    private void MediaKeysOverride_MixerChanged()
+    private void ExternalMixerChanged()
     {
         if (!_isVisibleForUser || IsUserAdjustingMixer())
         {
@@ -814,7 +837,7 @@ public partial class MainWindow : Window
             }
             catch
             {
-                // Ignore transient sync errors from media key updates.
+                // Ignore transient sync errors from media key / MIDI updates.
             }
         }));
     }

@@ -24,6 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Melanchall.DryWetMidi" Version="8.0.3" />
     <PackageReference Include="NAudio" Version="2.3.0" />
   </ItemGroup>
 
@@ -33,6 +34,9 @@
     <Content Include="Assets\tray-white.png" />
     <Content Include="Assets\tray-dark.png" />
     <Content Include="Assets\app.ico" />
+    <Content Include="Presets\**\*.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <EmbeddedResource Include="Assets\tray-accent.ico">
       <LogicalName>tray-accent.ico</LogicalName>
     </EmbeddedResource>

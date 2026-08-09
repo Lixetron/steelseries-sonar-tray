@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using SonarQuickMixer.Midi;
 using SonarQuickMixer.Services;
 using SonarQuickMixer.Settings;
 using SonarQuickMixer.Sonar;
@@ -15,12 +16,14 @@ public sealed class SettingsPanelController
     private readonly MediaKeysOverrideService _mediaKeysOverride;
     private readonly DiscordScreenshareEchoFixService _discordScreenshareEchoFix;
     private readonly VolumeOverlayService _volumeOverlay;
+    private readonly MidiControlService? _midiControl;
     private readonly Action _applyTrayIcon;
     private readonly ToggleButton _runAtWindowsStartupToggle;
     private readonly ToggleButton _mediaKeysOverrideToggle;
     private readonly ToggleButton _volumeOverlayToggle;
     private readonly ToggleButton _discordEchoFixToggle;
     private readonly ToggleButton _audioVisualizerToggle;
+    private readonly ToggleButton? _midiEnabledToggle;
     private readonly System.Windows.Controls.ComboBox _mediaKeysOverrideChannelCombo;
     private readonly FrameworkElement _mediaKeysOverrideChannelPanel;
     private readonly System.Windows.Controls.ComboBox _trayIconStyleCombo;
@@ -42,18 +45,22 @@ public sealed class SettingsPanelController
         ToggleButton audioVisualizerToggle,
         System.Windows.Controls.ComboBox mediaKeysOverrideChannelCombo,
         FrameworkElement mediaKeysOverrideChannelPanel,
-        System.Windows.Controls.ComboBox trayIconStyleCombo)
+        System.Windows.Controls.ComboBox trayIconStyleCombo,
+        MidiControlService? midiControl = null,
+        ToggleButton? midiEnabledToggle = null)
     {
         _settings = settings;
         _mediaKeysOverride = mediaKeysOverride;
         _discordScreenshareEchoFix = discordScreenshareEchoFix;
         _volumeOverlay = volumeOverlay;
+        _midiControl = midiControl;
         _applyTrayIcon = applyTrayIcon;
         _runAtWindowsStartupToggle = runAtWindowsStartupToggle;
         _mediaKeysOverrideToggle = mediaKeysOverrideToggle;
         _volumeOverlayToggle = volumeOverlayToggle;
         _discordEchoFixToggle = discordEchoFixToggle;
         _audioVisualizerToggle = audioVisualizerToggle;
+        _midiEnabledToggle = midiEnabledToggle;
         _mediaKeysOverrideChannelCombo = mediaKeysOverrideChannelCombo;
         _mediaKeysOverrideChannelPanel = mediaKeysOverrideChannelPanel;
         _trayIconStyleCombo = trayIconStyleCombo;
@@ -71,6 +78,10 @@ public sealed class SettingsPanelController
             _volumeOverlayToggle.IsChecked = _settings.VolumeOverlayEnabled;
             _discordEchoFixToggle.IsChecked = _settings.DiscordScreenshareEchoFix;
             _audioVisualizerToggle.IsChecked = _settings.AudioVisualizerEnabled;
+            if (_midiEnabledToggle is not null)
+            {
+                _midiEnabledToggle.IsChecked = _settings.MidiEnabled;
+            }
         }
         finally
         {
@@ -83,6 +94,7 @@ public sealed class SettingsPanelController
         SelectTrayIconStyle(_settings.TrayIconStyle);
         ApplyMediaKeysOverrideSettings();
         ApplyDiscordScreenshareEchoFixSettings();
+        ApplyMidiSettings();
     }
 
     public void SyncFeatureSettingsFromUi()
@@ -92,6 +104,10 @@ public sealed class SettingsPanelController
         _settings.VolumeOverlayEnabled = _volumeOverlayToggle.IsChecked == true;
         _settings.DiscordScreenshareEchoFix = _discordEchoFixToggle.IsChecked == true;
         _settings.AudioVisualizerEnabled = _audioVisualizerToggle.IsChecked == true;
+        if (_midiEnabledToggle is not null)
+        {
+            _settings.MidiEnabled = _midiEnabledToggle.IsChecked == true;
+        }
     }
 
     public void OnFeatureToggleChanged(object sender, RoutedEventArgs e, Action onVisualizerChanged)
@@ -112,6 +128,7 @@ public sealed class SettingsPanelController
         onVisualizerChanged();
         ApplyMediaKeysOverrideSettings();
         ApplyDiscordScreenshareEchoFixSettings();
+        ApplyMidiSettings();
 
         if (!_settings.VolumeOverlayEnabled)
         {
@@ -160,6 +177,18 @@ public sealed class SettingsPanelController
         var enabled = _discordEchoFixToggle.IsChecked == true;
         _settings.DiscordScreenshareEchoFix = enabled;
         _discordScreenshareEchoFix.SetEnabled(enabled);
+    }
+
+    public void ApplyMidiSettings()
+    {
+        if (_midiControl is null)
+        {
+            return;
+        }
+
+        var enabled = _midiEnabledToggle?.IsChecked == true;
+        _settings.MidiEnabled = enabled;
+        _midiControl.SetEnabled(enabled);
     }
 
     private bool ApplyRunAtWindowsStartupSetting()

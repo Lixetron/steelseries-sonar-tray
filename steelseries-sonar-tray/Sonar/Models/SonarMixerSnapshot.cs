@@ -37,4 +37,17 @@ public static class SonarChannels
         "aux" => "Aux",
         _ => channel
     };
+
+    /// <summary>
+    /// Official SteelSeries GG Sonar channel accent (extracted from GG theme tokens).
+    /// Game=success teal, Chat=info blue, Media=fuchsia, Aux=violet, Master=primary text grey.
+    /// </summary>
+    public static string GetAccentHex(string? channel) => NormalizeChannel(channel) switch
+    {
+        "game" => "#02DDBC",       // forgeColors.text.success / SUPPORT_GREEN_100
+        "chatRender" => "#2DB1FC", // forgeColors.text.info / SUPPORT_BLUE_100
+        "media" => "#FF53B0",      // PRIMARY_FUCHSIA_100
+        "aux" => "#8F51F4",        // PRIMARY_VIOLET_100
+        _ => "#D0D9F6"             // GREY_PRIMARY_100 (master / fallback)
+    };
 }

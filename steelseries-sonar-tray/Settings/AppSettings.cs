@@ -18,6 +18,8 @@ public sealed class AppSettings
     public bool DiscordScreenshareEchoFix { get; set; }
     public bool AudioVisualizerEnabled { get; set; } = true;
     public TrayIconStyle TrayIconStyle { get; set; } = TrayIconStyle.Auto;
+    public bool MidiEnabled { get; set; }
+    public float MidiRelativeStep { get; set; } = 0.02f;
 
     public static AppSettings Load()
     {

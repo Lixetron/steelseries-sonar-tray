@@ -12,28 +12,22 @@ public partial class VolumeOverlayWindow : Window
     private const double TrackWidth = 132;
     private const string VolumeIcon = "\uE767";
     private const string MuteIcon = "\uE74F";
+    private const string LockIcon = "\uE72E";
 
     private const int FadeInMs = 400;
     private const int FadeOutMs = 320;
-    private const double FillSmoothTimeMs = 55;
     private const double SlideDistance = 40;
 
     private Storyboard? _activeStoryboard;
     private TaskCompletionSource? _hideCompletion;
-    private double _displayedFillWidth;
-    private double _targetFillWidth;
     private double _restLeft;
     private double _restTop;
-    private bool _isFillSmoothing;
-    private bool _isMuted;
-    private DateTime _lastFillUpdateUtc = DateTime.MinValue;
 
     public event Action? EntranceAnimationCompleted;
 
     public VolumeOverlayWindow()
     {
         InitializeComponent();
-        TrackHost.Width = TrackWidth;
         SourceInitialized += (_, _) => VolumeNotificationGuard.ApplyNoActivateStyle(this);
     }
 
@@ -46,47 +40,44 @@ public partial class VolumeOverlayWindow : Window
     public void Warmup()
     {
         SetEntrancePose();
-        SetFillWidthImmediate(0);
+        ChannelItems.ItemsSource = Array.Empty<VolumeOverlayRowVm>();
         UpdateLayout();
     }
 
-    public void PrepareEntrance(VolumeNotificationState state)
+    public void PrepareEntrance(IReadOnlyList<VolumeNotificationState> channels)
     {
         StopActiveStoryboard();
-        UpdateContent(state, snapFill: true);
+        UpdateContent(channels);
         SetEntrancePose();
         UpdateLayout();
     }
 
-    public void UpdateContentOnly(VolumeNotificationState state)
-    {
-        UpdateContent(state, snapFill: false);
-    }
+    public void UpdateContentOnly(IReadOnlyList<VolumeNotificationState> channels) =>
+        UpdateContent(channels);
 
     public void StartEntranceAnimation()
     {
         _ = Dispatcher.BeginInvoke(PlayEntranceAnimation, DispatcherPriority.Loaded);
     }
 
-    public void Present(VolumeNotificationState state)
+    public void Present(IReadOnlyList<VolumeNotificationState> channels)
     {
         StopActiveStoryboard();
-        UpdateContent(state, snapFill: false);
+        UpdateContent(channels);
         SetVisiblePose();
     }
 
     public void HideImmediately()
     {
         StopActiveStoryboard();
-        StopFillSmoothing();
         SetEntrancePose();
+        ChannelItems.ItemsSource = Array.Empty<VolumeOverlayRowVm>();
         Hide();
     }
 
     public Task PlayExitAnimationAsync()
     {
         StopActiveStoryboard();
-        StopFillSmoothing();
 
         var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         _hideCompletion = completion;
@@ -105,6 +96,7 @@ public partial class VolumeOverlayWindow : Window
         storyboard.Completed += (_, _) =>
         {
             SetEntrancePose();
+            ChannelItems.ItemsSource = Array.Empty<VolumeOverlayRowVm>();
             _activeStoryboard = null;
             _hideCompletion?.TrySetResult();
             _hideCompletion = null;
@@ -173,32 +165,15 @@ public partial class VolumeOverlayWindow : Window
         return storyboard;
     }
 
-    private void UpdateContent(VolumeNotificationState state, bool snapFill)
+    private void UpdateContent(IReadOnlyList<VolumeNotificationState> channels)
     {
-        ChannelNameText.Text = SonarChannels.GetDisplayName(state.ChannelId);
-        VolumeIconText.Text = state.IsMuted ? MuteIcon : VolumeIcon;
-        _isMuted = state.IsMuted;
-
-        var targetFillWidth = state.IsMuted ? 0 : TrackWidth * Math.Clamp(state.Volume, 0f, 1f);
-        UpdateVolumeValueText(state.IsMuted ? 0 : state.Volume, state.IsMuted);
-
-        if (snapFill)
+        var rows = new List<VolumeOverlayRowVm>(channels.Count);
+        for (var i = 0; i < channels.Count; i++)
         {
-            SetFillWidthImmediate(targetFillWidth);
+            rows.Add(VolumeOverlayRowVm.FromState(channels[i], isLast: i == channels.Count - 1));
         }
-        else
-        {
-            SetTargetFillWidth(targetFillWidth);
-        }
-    }
 
-    private void SetFillWidthImmediate(double targetWidth)
-    {
-        StopFillSmoothing();
-        _targetFillWidth = Math.Clamp(targetWidth, 0, TrackWidth);
-        _displayedFillWidth = _targetFillWidth;
-        VolumeFill.BeginAnimation(WidthProperty, null);
-        VolumeFill.Width = _displayedFillWidth;
+        ChannelItems.ItemsSource = rows;
     }
 
     private void SetEntrancePose()
@@ -219,60 +194,6 @@ public partial class VolumeOverlayWindow : Window
         OverlayRoot.Opacity = 1;
     }
 
-    private void SetTargetFillWidth(double targetWidth)
-    {
-        _targetFillWidth = Math.Clamp(targetWidth, 0, TrackWidth);
-
-        if (!_isFillSmoothing)
-        {
-            _isFillSmoothing = true;
-            _lastFillUpdateUtc = DateTime.MinValue;
-            CompositionTarget.Rendering += OnFillRendering;
-        }
-    }
-
-    private void OnFillRendering(object? sender, EventArgs e)
-    {
-        var now = DateTime.UtcNow;
-        var deltaMs = _lastFillUpdateUtc == DateTime.MinValue
-            ? 16
-            : Math.Clamp((now - _lastFillUpdateUtc).TotalMilliseconds, 1, 48);
-        _lastFillUpdateUtc = now;
-
-        var diff = _targetFillWidth - _displayedFillWidth;
-        if (Math.Abs(diff) < 0.5)
-        {
-            _displayedFillWidth = _targetFillWidth;
-            VolumeFill.Width = _displayedFillWidth;
-            StopFillSmoothing();
-            return;
-        }
-
-        var alpha = 1 - Math.Exp(-deltaMs / FillSmoothTimeMs);
-        alpha = Math.Clamp(alpha, 0.25, 1);
-        _displayedFillWidth += diff * alpha;
-        VolumeFill.Width = _displayedFillWidth;
-    }
-
-    private void UpdateVolumeValueText(float volume, bool isMuted)
-    {
-        VolumeValueText.Text = isMuted
-            ? "Mute"
-            : $"{Math.Clamp((int)Math.Round(volume * 100), 0, 100)}%";
-    }
-
-    private void StopFillSmoothing()
-    {
-        if (!_isFillSmoothing)
-        {
-            return;
-        }
-
-        CompositionTarget.Rendering -= OnFillRendering;
-        _isFillSmoothing = false;
-        _lastFillUpdateUtc = DateTime.MinValue;
-    }
-
     private void StopActiveStoryboard()
     {
         if (_activeStoryboard is not null)
@@ -288,6 +209,54 @@ public partial class VolumeOverlayWindow : Window
         {
             _hideCompletion.TrySetResult();
             _hideCompletion = null;
+        }
+    }
+
+    private sealed class VolumeOverlayRowVm
+    {
+        public required string DisplayName { get; init; }
+        public required string IconGlyph { get; init; }
+        public required double FillWidth { get; init; }
+        public required string ValueText { get; init; }
+        public required System.Windows.Media.Brush AccentBrush { get; init; }
+        public required System.Windows.Media.Brush TrackBrush { get; init; }
+        public string Message { get; init; } = string.Empty;
+        public Visibility MessageVisibility { get; init; } = Visibility.Collapsed;
+        public bool IsLast { get; init; }
+
+        public static VolumeOverlayRowVm FromState(VolumeNotificationState state, bool isLast)
+        {
+            var hasMessage = !string.IsNullOrWhiteSpace(state.Message);
+            var volume = Math.Clamp(state.Volume, 0f, 1f);
+            var accent = CreateAccentBrush(state.ChannelId);
+            return new VolumeOverlayRowVm
+            {
+                DisplayName = SonarChannels.GetDisplayName(state.ChannelId),
+                IconGlyph = hasMessage ? LockIcon : state.IsMuted ? MuteIcon : VolumeIcon,
+                FillWidth = state.IsMuted ? 0 : TrackWidth * volume,
+                ValueText = state.IsMuted
+                    ? "Mute"
+                    : $"{Math.Clamp((int)Math.Round(volume * 100), 0, 100)}%",
+                AccentBrush = accent,
+                TrackBrush = CreateTrackBrush(accent.Color),
+                Message = hasMessage ? state.Message! : string.Empty,
+                MessageVisibility = hasMessage ? Visibility.Visible : Visibility.Collapsed,
+                IsLast = isLast
+            };
+        }
+
+        private static SolidColorBrush CreateAccentBrush(string channelId)
+        {
+            var brush = new SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(SonarChannels.GetAccentHex(channelId))!);
+            brush.Freeze();
+            return brush;
+        }
+
+        private static SolidColorBrush CreateTrackBrush(System.Windows.Media.Color accent)
+        {
+            var brush = new SolidColorBrush(System.Windows.Media.Color.FromArgb(0x44, accent.R, accent.G, accent.B));
+            brush.Freeze();
+            return brush;
         }
     }
 }

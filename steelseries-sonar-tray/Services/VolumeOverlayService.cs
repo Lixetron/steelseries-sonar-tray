@@ -11,6 +11,7 @@ public sealed class VolumeOverlayService : IDisposable
 
     private readonly Func<bool> _isEnabled;
     private readonly Dispatcher _dispatcher;
+    private readonly VolumeOverlayChannelList _activeChannels = new();
     private VolumeOverlayWindow? _window;
     private DispatcherTimer? _hideTimer;
     private bool _isOverlayVisible;
@@ -48,6 +49,7 @@ public sealed class VolumeOverlayService : IDisposable
         _entranceInProgress = false;
         _hideInProgress = false;
         _isOverlayVisible = false;
+        _activeChannels.Clear();
 
         if (_window is null)
         {
@@ -122,6 +124,8 @@ public sealed class VolumeOverlayService : IDisposable
         }
 
         _hideTimer?.Stop();
+        _activeChannels.Upsert(state);
+        var channels = _activeChannels.Snapshot();
 
         var animateEntrance = !_isOverlayVisible && !_hideInProgress && !_entranceInProgress;
         _hideInProgress = false;
@@ -133,7 +137,7 @@ public sealed class VolumeOverlayService : IDisposable
 
         if (animateEntrance)
         {
-            window.PrepareEntrance(state);
+            window.PrepareEntrance(channels);
 
             if (window.Visibility != Visibility.Visible)
             {
@@ -145,11 +149,11 @@ public sealed class VolumeOverlayService : IDisposable
         }
         else if (_entranceInProgress)
         {
-            window.UpdateContentOnly(state);
+            window.UpdateContentOnly(channels);
         }
         else
         {
-            window.Present(state);
+            window.Present(channels);
 
             if (window.Visibility != Visibility.Visible)
             {
@@ -192,6 +196,7 @@ public sealed class VolumeOverlayService : IDisposable
             await _window.PlayExitAnimationAsync().ConfigureAwait(true);
             _window.Hide();
             _isOverlayVisible = false;
+            _activeChannels.Clear();
         }
         finally
         {
@@ -206,6 +211,7 @@ public sealed class VolumeOverlayService : IDisposable
         _hideTimer = null;
         _isOverlayVisible = false;
         _entranceInProgress = false;
+        _activeChannels.Clear();
 
         if (_window is not null)
         {

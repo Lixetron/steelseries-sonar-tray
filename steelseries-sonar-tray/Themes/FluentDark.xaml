@@ -3,6 +3,9 @@
                     xmlns:controls="clr-namespace:SonarQuickMixer.Controls">
 
     <controls:SliderLevelWidthConverter x:Key="SliderLevelWidthConverter"/>
+    <controls:MidiControlTypeToVisibilityConverter x:Key="MidiControlTypeToVisibilityConverter"/>
+    <controls:InverseBooleanToVisibilityConverter x:Key="InverseBoolToVis"/>
+    <controls:MidiDropZoneToVisibilityConverter x:Key="MidiDropZoneToVisibilityConverter"/>
     <Color x:Key="AccentColor">#60CDFF</Color>
     <Color x:Key="StreamAccentColor">#C58CFF</Color>
     <Color x:Key="SurfaceColor">#202020</Color>
@@ -110,6 +113,64 @@
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
+    </Style>
+
+    <Style x:Key="FluentButtonStyle" TargetType="Button">
+        <Setter Property="Padding" Value="12,6"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Background" Value="{StaticResource SurfaceAltBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="6"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Background" Value="#333333"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter Property="Background" Value="#3A3A3A"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.45"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="FluentAccentButtonStyle" TargetType="Button" BasedOn="{StaticResource FluentButtonStyle}">
+        <Setter Property="Background" Value="#2860CDFF"/>
+        <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+        <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+
+    <Style x:Key="FluentDangerButtonStyle" TargetType="Button" BasedOn="{StaticResource FluentButtonStyle}">
+        <Setter Property="Background" Value="#28FF6B6B"/>
+        <Setter Property="BorderBrush" Value="#FF6B6B"/>
+        <Setter Property="Foreground" Value="#FF8A8A"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+
+    <Style x:Key="FluentTextBoxStyle" TargetType="TextBox">
+        <Setter Property="Padding" Value="8,6"/>
+        <Setter Property="Background" Value="{StaticResource SurfaceAltBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+        <Setter Property="CaretBrush" Value="{StaticResource TextPrimaryBrush}"/>
+        <Setter Property="FontSize" Value="12"/>
     </Style>
 
     <SolidColorBrush x:Key="LevelOverlayBrush" Color="#E8FFFFFF"/>

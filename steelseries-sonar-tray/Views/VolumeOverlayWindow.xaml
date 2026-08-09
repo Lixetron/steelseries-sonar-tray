@@ -22,59 +22,91 @@
             Padding="12"
             SnapsToDevicePixels="True"
             UseLayoutRounding="True">
-        <Grid>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            <TextBlock x:Name="ChannelNameText"
-                       Grid.Row="0"
-                       Grid.Column="1"
-                       Foreground="#B8B8B8"
-                       FontSize="10"
-                       Margin="0,0,0,4"
-                       HorizontalAlignment="Center"
-                       TextAlignment="Center"/>
-            <TextBlock x:Name="VolumeIconText"
-                       Grid.Row="0"
-                       Grid.RowSpan="2"
-                       Grid.Column="0"
-                       Text="&#xE767;"
-                       FontFamily="Segoe MDL2 Assets"
-                       FontSize="14"
-                       Foreground="#FFFFFF"
-                       VerticalAlignment="Center"
-                       Margin="0,0,8,0"/>
-            <Border x:Name="TrackHost"
-                    Grid.Row="1"
-                    Grid.Column="1"
-                    Height="3"
-                    CornerRadius="1.5"
-                    Background="#44FFFFFF"
-                    VerticalAlignment="Center"
-                    Margin="0,0,8,0">
-                <Border x:Name="VolumeFill"
-                        HorizontalAlignment="Left"
-                        Width="0"
-                        CornerRadius="1.5"
-                        Background="#FFFFFF"/>
-            </Border>
-            <TextBlock x:Name="VolumeValueText"
-                       Grid.Row="0"
-                       Grid.RowSpan="2"
-                       Grid.Column="2"
-                       Text="0%"
-                       Foreground="#FFFFFF"
-                       FontSize="11"
-                       FontWeight="SemiBold"
-                       VerticalAlignment="Center"
-                       MinWidth="30"
-                       TextAlignment="Right"/>
-        </Grid>
+        <ItemsControl x:Name="ChannelItems">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <StackPanel Orientation="Vertical"/>
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Grid Margin="0,0,0,8">
+                        <Grid.Style>
+                            <Style TargetType="Grid">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsLast}" Value="True">
+                                        <Setter Property="Margin" Value="0"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Grid.Style>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Row="0"
+                                   Grid.Column="1"
+                                   Text="{Binding DisplayName}"
+                                   Foreground="{Binding AccentBrush}"
+                                   FontSize="10"
+                                   Margin="0,0,0,4"
+                                   HorizontalAlignment="Center"
+                                   TextAlignment="Center"/>
+                        <TextBlock Grid.Row="0"
+                                   Grid.RowSpan="2"
+                                   Grid.Column="0"
+                                   Text="{Binding IconGlyph}"
+                                   FontFamily="Segoe MDL2 Assets"
+                                   FontSize="14"
+                                   Foreground="{Binding AccentBrush}"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,8,0"/>
+                        <Border Grid.Row="1"
+                                Grid.Column="1"
+                                Height="3"
+                                Width="132"
+                                CornerRadius="1.5"
+                                Background="{Binding TrackBrush}"
+                                VerticalAlignment="Center"
+                                Margin="0,0,8,0"
+                                HorizontalAlignment="Left">
+                            <Border HorizontalAlignment="Left"
+                                    Width="{Binding FillWidth}"
+                                    Height="3"
+                                    CornerRadius="1.5"
+                                    Background="{Binding AccentBrush}"/>
+                        </Border>
+                        <TextBlock Grid.Row="0"
+                                   Grid.RowSpan="2"
+                                   Grid.Column="2"
+                                   Text="{Binding ValueText}"
+                                   Foreground="{Binding AccentBrush}"
+                                   FontSize="11"
+                                   FontWeight="SemiBold"
+                                   VerticalAlignment="Center"
+                                   MinWidth="30"
+                                   TextAlignment="Right"/>
+                        <TextBlock Grid.Row="2"
+                                   Grid.Column="0"
+                                   Grid.ColumnSpan="3"
+                                   Margin="0,8,0,0"
+                                   Text="{Binding Message}"
+                                   Foreground="{Binding AccentBrush}"
+                                   Opacity="0.75"
+                                   FontSize="10"
+                                   TextWrapping="Wrap"
+                                   HorizontalAlignment="Center"
+                                   TextAlignment="Center"
+                                   Visibility="{Binding MessageVisibility}"/>
+                    </Grid>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
     </Border>
 </Window>

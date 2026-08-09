@@ -56,10 +56,11 @@ Commit script output (`*.ico`, `*.png`) with script changes.
 ## Roadmap
 
 - [ ] Custom hotkeys per channel
-- [ ] Physical device support (Stream Deck, MIDI/HID)
+- [x] Physical device support (MIDI multi-device / DryWetMidi)
+- [ ] Stream Deck / HID companions
 - [ ] Volume overlay on all volume changes (needs Sonar push/poll)
 
-Completed: Discord echo fix, GitHub Releases, update notifications.
+Completed: Discord echo fix, GitHub Releases, update notifications, MIDI Blueprint + Learn.
 
 ---
 

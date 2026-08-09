@@ -2,6 +2,7 @@ using System.Drawing;
 using System.Windows;
 using System.Windows.Interop;
 using Application = System.Windows.Application;
+using SonarQuickMixer.Midi;
 using SonarQuickMixer.Services;
 using SonarQuickMixer.Settings;
 using SonarQuickMixer.Tray;
@@ -14,8 +15,10 @@ public partial class App : Application
 {
     private WinForms.NotifyIcon? _notifyIcon;
     private MainWindow? _mainWindow;
+    private MidiConfigWindow? _midiConfigWindow;
     private AppSettings? _settings;
     private MediaKeysOverrideService? _mediaKeysOverride;
+    private MidiControlService? _midiControl;
     private DiscordScreenshareEchoFixService? _discordScreenshareEchoFix;
     private VolumeOverlayService? _volumeOverlay;
     private SingleInstanceManager? _singleInstance;
@@ -40,6 +43,11 @@ public partial class App : Application
         _volumeOverlay = new VolumeOverlayService(() => _settings!.VolumeOverlayEnabled);
         _mediaKeysOverride = new MediaKeysOverrideService();
         _mediaKeysOverride.VolumeAdjusted += state => _volumeOverlay.Show(state);
+
+        _midiControl = new MidiControlService(_settings);
+        _midiControl.VolumeAdjusted += state => _volumeOverlay.Show(state);
+        _midiControl.SetEnabled(_settings.MidiEnabled);
+
         _discordScreenshareEchoFix = new DiscordScreenshareEchoFixService();
         _discordScreenshareEchoFix.SetEnabled(_settings.DiscordScreenshareEchoFix);
         _mainWindow = new MainWindow(
@@ -47,7 +55,9 @@ public partial class App : Application
             _mediaKeysOverride,
             _discordScreenshareEchoFix,
             _volumeOverlay,
-            ApplyTrayIcon);
+            ApplyTrayIcon,
+            _midiControl,
+            ShowMidiSetup);
         _ = new WindowInteropHelper(_mainWindow).EnsureHandle();
         _ = _mainWindow.WarmupAsync();
 
@@ -62,6 +72,7 @@ public partial class App : Application
 
         var contextMenu = new WinForms.ContextMenuStrip();
         contextMenu.Items.Add("Open Mixer", null, (_, _) => ShowMixer());
+        contextMenu.Items.Add("MIDI Setup…", null, (_, _) => ShowMidiSetup());
         contextMenu.Items.Add("Exit", null, (_, _) => ShutdownApplication());
         _notifyIcon.ContextMenuStrip = contextMenu;
 
@@ -104,6 +115,26 @@ public partial class App : Application
         Dispatcher.Invoke(() => _ = _mainWindow.ShowInstantlyAsync(anchorScreenPoint));
     }
 
+    private void ShowMidiSetup()
+    {
+        if (_midiControl is null)
+        {
+            return;
+        }
+
+        Dispatcher.Invoke(() =>
+        {
+            if (_midiConfigWindow is null)
+            {
+                _midiConfigWindow = new MidiConfigWindow(_midiControl);
+                _midiConfigWindow.Closed += (_, _) => _midiConfigWindow = null;
+            }
+
+            _midiConfigWindow.Show();
+            _midiConfigWindow.Activate();
+        });
+    }
+
     private void ShutdownApplication()
     {
         if (_notifyIcon is not null)
@@ -125,8 +156,14 @@ public partial class App : Application
             _notifyIcon = null;
         }
 
+        _midiConfigWindow?.Close();
+        _midiConfigWindow = null;
+
         _mediaKeysOverride?.Dispose();
         _mediaKeysOverride = null;
+
+        _midiControl?.Dispose();
+        _midiControl = null;
 
         _discordScreenshareEchoFix?.Dispose();
         _discordScreenshareEchoFix = null;

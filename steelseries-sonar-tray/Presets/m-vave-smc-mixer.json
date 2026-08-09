@@ -1,0 +1,93 @@
+{
+  "name": "M-VAVE SMC-Mixer",
+  "deviceMatch": [ "SMC-Mixer", "M-VAVE", "SMC Mixer" ],
+  "hint": "Nested-area layout. Factory map is DAW Mode / Mode A (Shift+←, Mackie Control): Minimal factory map for DAW Mode / Mode A (Shift+←, Mackie Control): faders = Pitch Bend E0–E7, mute Notes 16–23, encoders = relative CC 16–23. No LED feedback baked in — configure in MIDI Setup. CC Mode / Mode B is Shift+→ (MidiSuite).",
+  "columns": 8,
+  "rows": 3,
+  "regions": [
+    { "id": "chassis", "label": "", "row": 0, "col": 0, "rowSpan": 3, "colSpan": 8, "hideBorder": true },
+
+    { "id": "encoders", "parentRegionId": "chassis", "label": "", "row": 0, "col": 0, "colSpan": 8, "hideBorder": true, "contentJustify": "spaceBetween" },
+    { "id": "strips", "parentRegionId": "chassis", "label": "", "row": 1, "col": 0, "colSpan": 8, "hideBorder": true },
+    { "id": "transport", "parentRegionId": "chassis", "label": "", "row": 2, "col": 0, "colSpan": 8, "hideBorder": true, "keepSpacing": true, "contentJustify": "spaceEvenly" },
+
+    { "id": "strip1", "parentRegionId": "strips", "label": "", "row": 0, "col": 0, "hideBorder": true, "keepSpacing": true },
+    { "id": "strip2", "parentRegionId": "strips", "label": "", "row": 0, "col": 1, "hideBorder": true, "keepSpacing": true },
+    { "id": "strip3", "parentRegionId": "strips", "label": "", "row": 0, "col": 2, "hideBorder": true, "keepSpacing": true },
+    { "id": "strip4", "parentRegionId": "strips", "label": "", "row": 0, "col": 3, "hideBorder": true, "keepSpacing": true },
+    { "id": "strip5", "parentRegionId": "strips", "label": "", "row": 0, "col": 4, "hideBorder": true, "keepSpacing": true },
+    { "id": "strip6", "parentRegionId": "strips", "label": "", "row": 0, "col": 5, "hideBorder": true, "keepSpacing": true },
+    { "id": "strip7", "parentRegionId": "strips", "label": "", "row": 0, "col": 6, "hideBorder": true, "keepSpacing": true },
+    { "id": "strip8", "parentRegionId": "strips", "label": "", "row": 0, "col": 7, "hideBorder": true, "keepSpacing": true }
+  ],
+  "controls": [
+    { "id": "e1", "regionId": "encoders", "row": 0, "col": 0, "type": "encoder", "label": "ENC1", "defaultMode": "relative", "controller": 16, "relativeEncoding": "offsetBinary" },
+    { "id": "e2", "regionId": "encoders", "row": 0, "col": 1, "type": "encoder", "label": "ENC2", "defaultMode": "relative", "controller": 17, "relativeEncoding": "offsetBinary" },
+    { "id": "e3", "regionId": "encoders", "row": 0, "col": 2, "type": "encoder", "label": "ENC3", "defaultMode": "relative", "controller": 18, "relativeEncoding": "offsetBinary" },
+    { "id": "e4", "regionId": "encoders", "row": 0, "col": 3, "type": "encoder", "label": "ENC4", "defaultMode": "relative", "controller": 19, "relativeEncoding": "offsetBinary" },
+    { "id": "e5", "regionId": "encoders", "row": 0, "col": 4, "type": "encoder", "label": "ENC5", "defaultMode": "relative", "controller": 20, "relativeEncoding": "offsetBinary" },
+    { "id": "e6", "regionId": "encoders", "row": 0, "col": 5, "type": "encoder", "label": "ENC6", "defaultMode": "relative", "controller": 21, "relativeEncoding": "offsetBinary" },
+    { "id": "e7", "regionId": "encoders", "row": 0, "col": 6, "type": "encoder", "label": "ENC7", "defaultMode": "relative", "controller": 22, "relativeEncoding": "offsetBinary" },
+    { "id": "e8", "regionId": "encoders", "row": 0, "col": 7, "type": "encoder", "label": "ENC8", "defaultMode": "relative", "controller": 23, "relativeEncoding": "offsetBinary" },
+
+    { "id": "f1", "regionId": "strip1", "row": 0, "col": 0, "type": "fader", "rowSpan": 4, "label": "CH1", "defaultMode": "absolute", "controller": 0, "isPitchBend": true  },
+    { "id": "m1", "regionId": "strip1", "row": 0, "col": 1, "type": "button", "label": "M", "controller": 16, "isNote": true },
+    { "id": "s1", "regionId": "strip1", "row": 1, "col": 1, "type": "button", "label": "S", "controller": 8, "isNote": true },
+    { "id": "r1", "regionId": "strip1", "row": 2, "col": 1, "type": "button", "label": "R", "controller": 0, "isNote": true },
+    { "id": "sel1", "regionId": "strip1", "row": 3, "col": 1, "type": "button", "label": "□", "controller": 24, "isNote": true },
+
+    { "id": "f2", "regionId": "strip2", "row": 0, "col": 0, "type": "fader", "rowSpan": 4, "label": "CH2", "defaultMode": "absolute", "controller": 1, "isPitchBend": true  },
+    { "id": "m2", "regionId": "strip2", "row": 0, "col": 1, "type": "button", "label": "M", "controller": 17, "isNote": true },
+    { "id": "s2", "regionId": "strip2", "row": 1, "col": 1, "type": "button", "label": "S", "controller": 9, "isNote": true },
+    { "id": "r2", "regionId": "strip2", "row": 2, "col": 1, "type": "button", "label": "R", "controller": 1, "isNote": true },
+    { "id": "sel2", "regionId": "strip2", "row": 3, "col": 1, "type": "button", "label": "□", "controller": 25, "isNote": true },
+
+    { "id": "f3", "regionId": "strip3", "row": 0, "col": 0, "type": "fader", "rowSpan": 4, "label": "CH3", "defaultMode": "absolute", "controller": 2, "isPitchBend": true  },
+    { "id": "m3", "regionId": "strip3", "row": 0, "col": 1, "type": "button", "label": "M", "controller": 18, "isNote": true },
+    { "id": "s3", "regionId": "strip3", "row": 1, "col": 1, "type": "button", "label": "S", "controller": 10, "isNote": true },
+    { "id": "r3", "regionId": "strip3", "row": 2, "col": 1, "type": "button", "label": "R", "controller": 2, "isNote": true },
+    { "id": "sel3", "regionId": "strip3", "row": 3, "col": 1, "type": "button", "label": "□", "controller": 26, "isNote": true },
+
+    { "id": "f4", "regionId": "strip4", "row": 0, "col": 0, "type": "fader", "rowSpan": 4, "label": "CH4", "defaultMode": "absolute", "controller": 3, "isPitchBend": true  },
+    { "id": "m4", "regionId": "strip4", "row": 0, "col": 1, "type": "button", "label": "M", "controller": 19, "isNote": true },
+    { "id": "s4", "regionId": "strip4", "row": 1, "col": 1, "type": "button", "label": "S", "controller": 11, "isNote": true },
+    { "id": "r4", "regionId": "strip4", "row": 2, "col": 1, "type": "button", "label": "R", "controller": 3, "isNote": true },
+    { "id": "sel4", "regionId": "strip4", "row": 3, "col": 1, "type": "button", "label": "□", "controller": 27, "isNote": true },
+
+    { "id": "f5", "regionId": "strip5", "row": 0, "col": 0, "type": "fader", "rowSpan": 4, "label": "CH5", "defaultMode": "absolute", "controller": 4, "isPitchBend": true  },
+    { "id": "m5", "regionId": "strip5", "row": 0, "col": 1, "type": "button", "label": "M", "controller": 20, "isNote": true },
+    { "id": "s5", "regionId": "strip5", "row": 1, "col": 1, "type": "button", "label": "S", "controller": 12, "isNote": true },
+    { "id": "r5", "regionId": "strip5", "row": 2, "col": 1, "type": "button", "label": "R", "controller": 4, "isNote": true },
+    { "id": "sel5", "regionId": "strip5", "row": 3, "col": 1, "type": "button", "label": "□", "controller": 28, "isNote": true },
+
+    { "id": "f6", "regionId": "strip6", "row": 0, "col": 0, "type": "fader", "rowSpan": 4, "label": "CH6", "defaultMode": "absolute", "controller": 5, "isPitchBend": true  },
+    { "id": "m6", "regionId": "strip6", "row": 0, "col": 1, "type": "button", "label": "M", "controller": 21, "isNote": true },
+    { "id": "s6", "regionId": "strip6", "row": 1, "col": 1, "type": "button", "label": "S", "controller": 13, "isNote": true },
+    { "id": "r6", "regionId": "strip6", "row": 2, "col": 1, "type": "button", "label": "R", "controller": 5, "isNote": true },
+    { "id": "sel6", "regionId": "strip6", "row": 3, "col": 1, "type": "button", "label": "□", "controller": 29, "isNote": true },
+
+    { "id": "f7", "regionId": "strip7", "row": 0, "col": 0, "type": "fader", "rowSpan": 4, "label": "CH7", "defaultMode": "absolute", "controller": 6, "isPitchBend": true  },
+    { "id": "m7", "regionId": "strip7", "row": 0, "col": 1, "type": "button", "label": "M", "controller": 22, "isNote": true },
+    { "id": "s7", "regionId": "strip7", "row": 1, "col": 1, "type": "button", "label": "S", "controller": 14, "isNote": true },
+    { "id": "r7", "regionId": "strip7", "row": 2, "col": 1, "type": "button", "label": "R", "controller": 6, "isNote": true },
+    { "id": "sel7", "regionId": "strip7", "row": 3, "col": 1, "type": "button", "label": "□", "controller": 30, "isNote": true },
+
+    { "id": "f8", "regionId": "strip8", "row": 0, "col": 0, "type": "fader", "rowSpan": 4, "label": "CH8", "defaultMode": "absolute", "controller": 7, "isPitchBend": true  },
+    { "id": "m8", "regionId": "strip8", "row": 0, "col": 1, "type": "button", "label": "M", "controller": 23, "isNote": true },
+    { "id": "s8", "regionId": "strip8", "row": 1, "col": 1, "type": "button", "label": "S", "controller": 15, "isNote": true },
+    { "id": "r8", "regionId": "strip8", "row": 2, "col": 1, "type": "button", "label": "R", "controller": 7, "isNote": true },
+    { "id": "sel8", "regionId": "strip8", "row": 3, "col": 1, "type": "button", "label": "□", "controller": 31, "isNote": true },
+
+    { "id": "tr_play", "regionId": "transport", "row": 0, "col": 0, "type": "button", "label": "Play", "controller": 94, "isNote": true },
+    { "id": "tr_stop", "regionId": "transport", "row": 0, "col": 1, "type": "button", "label": "Stop", "controller": 93, "isNote": true },
+    { "id": "tr_rec", "regionId": "transport", "row": 0, "col": 2, "type": "button", "label": "Rec", "controller": 95, "isNote": true },
+    { "id": "tr_rew", "regionId": "transport", "row": 0, "col": 3, "type": "button", "label": "Rew", "controller": 91, "isNote": true },
+    { "id": "tr_ff", "regionId": "transport", "row": 0, "col": 4, "type": "button", "label": "FF", "controller": 92, "isNote": true },
+    { "id": "tr_bank_prev", "regionId": "transport", "row": 0, "col": 5, "type": "button", "label": "Bank«", "controller": 46, "isNote": true },
+    { "id": "tr_bank_next", "regionId": "transport", "row": 0, "col": 6, "type": "button", "label": "Bank»", "controller": 47, "isNote": true },
+    { "id": "tr_up", "regionId": "transport", "row": 0, "col": 7, "type": "button", "label": "Up", "controller": 96, "isNote": true },
+    { "id": "tr_down", "regionId": "transport", "row": 0, "col": 8, "type": "button", "label": "Down", "controller": 97, "isNote": true },
+    { "id": "tr_left", "regionId": "transport", "row": 0, "col": 9, "type": "button", "label": "Left", "controller": 98, "isNote": true },
+    { "id": "tr_right", "regionId": "transport", "row": 0, "col": 10, "type": "button", "label": "Right", "controller": 99, "isNote": true }
+  ]
+}
