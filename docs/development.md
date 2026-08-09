@@ -20,9 +20,11 @@ VS Code tasks (`.vscode/tasks.json`): `build: release`, `run`, `publish: dist`, 
 ## Publish
 
 ```powershell
-.\scripts\publish.ps1 -Single   # dist-single\SonarQuickMixer.exe (self-contained)
-.\scripts\publish.ps1           # dist\SonarQuickMixer.exe (needs .NET 8 runtime)
+.\scripts\publish.ps1 -Single   # dist-single\SonarQuickMixer.exe + Presets\ (self-contained)
+.\scripts\publish.ps1           # dist\SonarQuickMixer.exe + Presets\ (needs .NET 8 runtime)
 ```
+
+Release CI zips `dist-single\*` → `SonarQuickMixer-vX.Y.Z-single.zip` (exe keeps the plain name `SonarQuickMixer.exe`).
 
 Profiles: `Folder` (framework-dependent) and `SingleFile` (`win-x64`, self-contained) in `Properties/PublishProfiles/`.
 

@@ -31,8 +31,15 @@ jobs:
         shell: pwsh
         run: |
           $tag = '${{ github.ref_name }}'
-          Copy-Item dist-single/SonarQuickMixer.exe "SonarQuickMixer-$tag-single.exe"
-          Compress-Archive -Path dist/* -DestinationPath "SonarQuickMixer-$tag-win-x64.zip"
+          $singleDir = 'dist-single'
+          $singleExe = Join-Path $singleDir 'SonarQuickMixer.exe'
+          if (-not (Test-Path $singleExe)) { throw "Missing $singleExe" }
+          if (-not (Test-Path (Join-Path $singleDir 'Presets'))) {
+            throw "Missing $singleDir/Presets — official MIDI layouts must ship beside the exe"
+          }
+          # Zip root = SonarQuickMixer.exe + Presets\ (exe keeps the simple name).
+          Compress-Archive -Path (Join-Path $singleDir '*') -DestinationPath "SonarQuickMixer-$tag-single.zip" -Force
+          Compress-Archive -Path dist/* -DestinationPath "SonarQuickMixer-$tag-win-x64.zip" -Force
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -43,12 +50,14 @@ jobs:
 
             | Asset | When to use |
             |-------|-------------|
-            | `SonarQuickMixer-*-single.exe` | **Recommended** — one self-contained file, no separate .NET install (~155 MB) |
+            | `SonarQuickMixer-*-single.zip` | **Recommended** — self-contained `SonarQuickMixer.exe` + `Presets\` (no separate .NET install) |
             | `SonarQuickMixer-*-win-x64.zip` | Smaller download — extract and run `SonarQuickMixer.exe`; requires [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0) |
+
+            Both zips unpack to `SonarQuickMixer.exe` (plain name) and include official MIDI `Presets\`.
 
             See the [user guide](https://github.com/${{ github.repository }}/blob/master/docs/user-guide.md#installation) for installation and first-run setup.
 
             **Autostart:** open the mixer → **Settings** → enable **Start with Windows** ([details](https://github.com/${{ github.repository }}/blob/master/docs/user-guide.md#autostart-optional)).
           files: |
-            SonarQuickMixer-${{ github.ref_name }}-single.exe
+            SonarQuickMixer-${{ github.ref_name }}-single.zip
             SonarQuickMixer-${{ github.ref_name }}-win-x64.zip

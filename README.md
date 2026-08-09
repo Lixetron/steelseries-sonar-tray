@@ -32,10 +32,10 @@ Sonar Quick Mixer is a **daily-driver layer on top of Sonar**, not a replacement
 ## Quick start
 
 1. Install **SteelSeries GG** with **Sonar** running.
-2. Download **`SonarQuickMixer-vX.Y.Z-single.exe`** from [**Releases**](https://github.com/lixetron/steelseries-sonar-tray/releases).
-3. Run it — a tray icon appears. **Left-click** to open the mixer.
+2. Download **`SonarQuickMixer-vX.Y.Z-single.zip`** from [**Releases**](https://github.com/lixetron/steelseries-sonar-tray/releases), extract it, and run **`SonarQuickMixer.exe`**.
+3. A tray icon appears. **Left-click** to open the mixer.
 
-Requires **Windows 10+** (64-bit). The single-file build bundles .NET 8; the folder `.zip` needs the [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0).
+Requires **Windows 10+** (64-bit). The single-file zip bundles .NET 8; the folder `*-win-x64.zip` needs the [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0).
 
 Full installation options, usage, and settings: [User guide](docs/user-guide.md)  
 MIDI controllers: [User guide → MIDI Setup](docs/user-guide.md#midi-setup) · [Preset authoring](docs/midi-preset-authoring.md)

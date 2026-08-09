@@ -36,6 +36,9 @@
     <Content Include="Assets\app.ico" />
     <Content Include="Presets\**\*.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <!-- Keep beside the published host so release zips include Presets\ next to SonarQuickMixer.exe. -->
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </Content>
     <EmbeddedResource Include="Assets\tray-accent.ico">
       <LogicalName>tray-accent.ico</LogicalName>
@@ -47,5 +50,19 @@
       <LogicalName>tray-dark.ico</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
+
+  <!-- DryWetMidi's NuGet targets always CopyToOutput the macOS .dylib; drop it on Windows publishes. -->
+  <Target Name="StripDryWetMidiMacNative"
+          AfterTargets="ResolveReferences;PrepareForBuild"
+          BeforeTargets="AssignTargetPaths;ComputeFilesToPublish">
+    <ItemGroup>
+      <None Remove="@(None)"
+            Condition="'%(Filename)%(Extension)' == 'Melanchall_DryWetMidi_Native64.dylib'" />
+      <ContentWithTargetPath Remove="@(ContentWithTargetPath)"
+            Condition="'%(Filename)%(Extension)' == 'Melanchall_DryWetMidi_Native64.dylib'" />
+      <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)"
+            Condition="'%(Filename)%(Extension)' == 'Melanchall_DryWetMidi_Native64.dylib'" />
+    </ItemGroup>
+  </Target>
 
 </Project>

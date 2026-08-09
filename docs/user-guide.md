@@ -106,10 +106,10 @@ Open [**Releases**](https://github.com/lixetron/steelseries-sonar-tray/releases)
 
 | Asset | Best for |
 |-------|----------|
-| **`SonarQuickMixer-vX.Y.Z-single.exe`** | Most users — self-contained, no separate .NET install |
-| **`SonarQuickMixer-vX.Y.Z-win-x64.zip`** | Smaller download; requires [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0) |
+| **`SonarQuickMixer-vX.Y.Z-single.zip`** | Most users — extract and run `SonarQuickMixer.exe` (self-contained, no separate .NET install). Includes official MIDI `Presets\`. |
+| **`SonarQuickMixer-vX.Y.Z-win-x64.zip`** | Smaller download; requires [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0). Also includes `Presets\` next to the exe. |
 
-Run `SonarQuickMixer.exe`. Left-click the tray icon to open the mixer.
+Extract the zip and run `SonarQuickMixer.exe`. Left-click the tray icon to open the mixer.
 
 To build from source or publish locally, see [Development](development.md).
 
