@@ -24,6 +24,9 @@ public sealed class SettingsPanelController
     private readonly ToggleButton _discordEchoFixToggle;
     private readonly ToggleButton _audioVisualizerToggle;
     private readonly ToggleButton? _midiEnabledToggle;
+    private readonly ToggleButton _showDeviceNameToggle;
+    private readonly ToggleButton _showDeviceBatteryToggle;
+    private readonly ToggleButton _showDeviceConnectionToggle;
     private readonly System.Windows.Controls.ComboBox _mediaKeysOverrideChannelCombo;
     private readonly FrameworkElement _mediaKeysOverrideChannelPanel;
     private readonly System.Windows.Controls.ComboBox _trayIconStyleCombo;
@@ -46,6 +49,9 @@ public sealed class SettingsPanelController
         System.Windows.Controls.ComboBox mediaKeysOverrideChannelCombo,
         FrameworkElement mediaKeysOverrideChannelPanel,
         System.Windows.Controls.ComboBox trayIconStyleCombo,
+        ToggleButton showDeviceNameToggle,
+        ToggleButton showDeviceBatteryToggle,
+        ToggleButton showDeviceConnectionToggle,
         MidiControlService? midiControl = null,
         ToggleButton? midiEnabledToggle = null)
     {
@@ -61,6 +67,9 @@ public sealed class SettingsPanelController
         _discordEchoFixToggle = discordEchoFixToggle;
         _audioVisualizerToggle = audioVisualizerToggle;
         _midiEnabledToggle = midiEnabledToggle;
+        _showDeviceNameToggle = showDeviceNameToggle;
+        _showDeviceBatteryToggle = showDeviceBatteryToggle;
+        _showDeviceConnectionToggle = showDeviceConnectionToggle;
         _mediaKeysOverrideChannelCombo = mediaKeysOverrideChannelCombo;
         _mediaKeysOverrideChannelPanel = mediaKeysOverrideChannelPanel;
         _trayIconStyleCombo = trayIconStyleCombo;
@@ -82,6 +91,10 @@ public sealed class SettingsPanelController
             {
                 _midiEnabledToggle.IsChecked = _settings.MidiEnabled;
             }
+
+            _showDeviceNameToggle.IsChecked = _settings.ShowDeviceName;
+            _showDeviceBatteryToggle.IsChecked = _settings.ShowDeviceBattery;
+            _showDeviceConnectionToggle.IsChecked = _settings.ShowDeviceConnection;
         }
         finally
         {
@@ -108,6 +121,10 @@ public sealed class SettingsPanelController
         {
             _settings.MidiEnabled = _midiEnabledToggle.IsChecked == true;
         }
+
+        _settings.ShowDeviceName = _showDeviceNameToggle.IsChecked == true;
+        _settings.ShowDeviceBattery = _showDeviceBatteryToggle.IsChecked == true;
+        _settings.ShowDeviceConnection = _showDeviceConnectionToggle.IsChecked == true;
     }
 
     public void OnFeatureToggleChanged(object sender, RoutedEventArgs e, Action onVisualizerChanged)

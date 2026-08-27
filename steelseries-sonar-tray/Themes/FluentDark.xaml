@@ -21,6 +21,11 @@
     <SolidColorBrush x:Key="BorderBrush" Color="{StaticResource BorderColor}"/>
     <SolidColorBrush x:Key="TextPrimaryBrush" Color="{StaticResource TextPrimaryColor}"/>
     <SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource TextSecondaryColor}"/>
+    <SolidColorBrush x:Key="BatteryFullBrush" Color="#3DDC97"/>
+    <SolidColorBrush x:Key="BatteryHalfBrush" Color="#60CDFF"/>
+    <SolidColorBrush x:Key="BatteryLowBrush" Color="#FFB84D"/>
+    <SolidColorBrush x:Key="BatteryEmptyBrush" Color="#FF6B6B"/>
+    <SolidColorBrush x:Key="BatteryChargingBrush" Color="#60CDFF"/>
 
     <Style x:Key="MixerLabelStyle" TargetType="TextBlock">
         <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>

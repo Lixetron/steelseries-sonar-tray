@@ -5,6 +5,8 @@ using System.Windows.Input;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using SonarQuickMixer.Audio;
+using SonarQuickMixer.Controls;
+using SonarQuickMixer.Headset;
 using SonarQuickMixer.Midi;
 using SonarQuickMixer.Mixing;
 using SonarQuickMixer.Services;
@@ -31,6 +33,7 @@ public partial class MainWindow : Window
     private bool _suppressDeactivateHide;
 
     private readonly SonarApiClient _apiClient = new();
+    private readonly HeadsetDeviceInfoService _headsetDeviceInfo = new();
     private readonly SonarChannelLevelMonitor _levelMonitor = new();
     private readonly GitHubUpdateChecker _updateChecker = new();
     private readonly AppSettings _settings;
@@ -94,6 +97,9 @@ public partial class MainWindow : Window
             MediaKeysOverrideChannelCombo,
             MediaKeysOverrideChannelPanel,
             TrayIconStyleCombo,
+            ShowDeviceNameToggle,
+            ShowDeviceBatteryToggle,
+            ShowDeviceConnectionToggle,
             _midiControl,
             MidiEnabledToggle);
         _updateNotification = new UpdateNotificationController(
@@ -152,6 +158,7 @@ public partial class MainWindow : Window
             _backgroundSyncTimer.Stop();
             _volumeSend.Stop();
             _levelMonitor.Dispose();
+            _headsetDeviceInfo.Dispose();
             _apiClient.Dispose();
             _updateChecker.Dispose();
         };
@@ -267,6 +274,8 @@ public partial class MainWindow : Window
         {
             StatusText.Text = "Sonar API unavailable";
         }
+
+        _ = RefreshDeviceInfoAsync();
 
         _settingsSyncTimer.Start();
         UpdateLevelPollTimer();
@@ -421,6 +430,8 @@ public partial class MainWindow : Window
             {
                 _overlayLayout.LockOverlayHeight();
             }
+
+            await RefreshDeviceInfoAsync().ConfigureAwait(true);
         }
         catch (Exception)
         {
@@ -788,8 +799,86 @@ public partial class MainWindow : Window
         }
     }
 
-    private void FeatureToggle_Changed(object sender, RoutedEventArgs e) =>
+    private void FeatureToggle_Changed(object sender, RoutedEventArgs e)
+    {
         _settingsPanel.OnFeatureToggleChanged(sender, e, ApplyAudioVisualizerState);
+        _ = RefreshDeviceInfoAsync(force: true);
+    }
+
+    private async Task RefreshDeviceInfoAsync(bool force = false)
+    {
+        if (force)
+        {
+            _headsetDeviceInfo.InvalidateCache();
+        }
+
+        try
+        {
+            var info = await _headsetDeviceInfo.GetInfoAsync().ConfigureAwait(true);
+            ApplyDeviceInfoToUi(info);
+        }
+        catch
+        {
+            DeviceInfoText.Visibility = Visibility.Collapsed;
+            BatteryIndicator.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private void ApplyDeviceInfoToUi(HeadsetDeviceInfo? info)
+    {
+        var secondary = HeadsetDeviceInfoFormatter.FormatSecondaryLine(info, _settings);
+        if (string.IsNullOrWhiteSpace(secondary))
+        {
+            DeviceInfoText.Visibility = Visibility.Collapsed;
+            DeviceInfoText.Text = string.Empty;
+        }
+        else
+        {
+            DeviceInfoText.Text = secondary;
+            DeviceInfoText.Visibility = Visibility.Visible;
+        }
+
+        var batteryText = HeadsetDeviceInfoFormatter.FormatBatteryPercentText(info, _settings);
+        var iconKind = _settings.ShowDeviceBattery
+            ? BatteryIconKindResolver.Resolve(info?.BatteryPercent, info?.IsCharging, info?.IsHeadsetPowered)
+            : BatteryIconKind.Hidden;
+
+        if (!_settings.ShowDeviceBattery ||
+            (iconKind == BatteryIconKind.Hidden && string.IsNullOrWhiteSpace(batteryText)))
+        {
+            BatteryIndicator.Visibility = Visibility.Collapsed;
+            BatteryIndicator.IconKind = BatteryIconKind.Hidden;
+            BatteryIndicator.PercentText = string.Empty;
+            BatteryIndicator.ToolTip = null;
+            return;
+        }
+
+        if (iconKind == BatteryIconKind.Hidden && !string.IsNullOrWhiteSpace(batteryText))
+        {
+            // Powered unknown but percent available — treat as level from percent only.
+            iconKind = BatteryIconKindResolver.Resolve(
+                info?.BatteryPercent,
+                info?.IsCharging,
+                isPowered: true);
+        }
+
+        BatteryIndicator.IconKind = iconKind;
+        BatteryIndicator.PercentText = batteryText ?? string.Empty;
+        BatteryIndicator.Visibility = Visibility.Visible;
+        BatteryIndicator.ToolTip = BuildBatteryTooltip(info, iconKind);
+    }
+
+    private static string BuildBatteryTooltip(HeadsetDeviceInfo? info, BatteryIconKind kind)
+    {
+        var name = string.IsNullOrWhiteSpace(info?.DisplayName) ? "Headset" : info!.DisplayName!;
+        return kind switch
+        {
+            BatteryIconKind.Charging when info?.BatteryPercent is int p => $"{name}: {p}% · charging",
+            BatteryIconKind.Empty when info?.IsHeadsetPowered == false => $"{name}: powered off",
+            _ when info?.BatteryPercent is int percent => $"{name}: {percent}%",
+            _ => name
+        };
+    }
 
     private void ApplyAudioVisualizerState()
     {

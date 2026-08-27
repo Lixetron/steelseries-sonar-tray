@@ -1,0 +1,90 @@
+<UserControl x:Class="SonarQuickMixer.Controls.BatteryStatusIndicator"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Name="Root">
+    <UserControl.Resources>
+        <SolidColorBrush x:Key="BatteryTintBrush" Color="#C8C8C8"/>
+    </UserControl.Resources>
+    <StackPanel Orientation="Horizontal"
+                VerticalAlignment="Center">
+        <Grid Width="22"
+              Height="12"
+              Margin="0,0,6,0"
+              VerticalAlignment="Center">
+            <!-- Full -->
+            <Viewbox x:Name="IconFull" Stretch="Uniform" Visibility="Collapsed">
+                <Canvas Width="22" Height="12">
+                    <Path Fill="{DynamicResource BatteryTintBrush}"
+                          Data="M1.5,2.5 C1.5,1.67 2.17,1 3,1 L17,1 C17.83,1 18.5,1.67 18.5,2.5 L18.5,9.5 C18.5,10.33 17.83,11 17,11 L3,11 C2.17,11 1.5,10.33 1.5,9.5 Z M19.25,4 L20.5,4 C21.05,4 21.5,4.45 21.5,5 L21.5,7 C21.5,7.55 21.05,8 20.5,8 L19.25,8 Z"/>
+                    <Rectangle Canvas.Left="3.25" Canvas.Top="2.75" Width="13.5" Height="6.5" RadiusX="1" RadiusY="1"
+                               Fill="{DynamicResource BatteryTintBrush}"/>
+                </Canvas>
+            </Viewbox>
+
+            <!-- Half -->
+            <Viewbox x:Name="IconHalf" Stretch="Uniform" Visibility="Collapsed">
+                <Canvas Width="22" Height="12">
+                    <Path Stroke="{DynamicResource BatteryTintBrush}"
+                          StrokeThickness="1.4"
+                          Fill="Transparent"
+                          Data="M1.5,2.5 C1.5,1.67 2.17,1 3,1 L17,1 C17.83,1 18.5,1.67 18.5,2.5 L18.5,9.5 C18.5,10.33 17.83,11 17,11 L3,11 C2.17,11 1.5,10.33 1.5,9.5 Z"/>
+                    <Path Fill="{DynamicResource BatteryTintBrush}"
+                          Data="M19.25,4 L20.5,4 C21.05,4 21.5,4.45 21.5,5 L21.5,7 C21.5,7.55 21.05,8 20.5,8 L19.25,8 Z"/>
+                    <Rectangle Canvas.Left="3.25" Canvas.Top="2.75" Width="7" Height="6.5" RadiusX="1" RadiusY="1"
+                               Fill="{DynamicResource BatteryTintBrush}"/>
+                </Canvas>
+            </Viewbox>
+
+            <!-- Low / almost empty -->
+            <Viewbox x:Name="IconLow" Stretch="Uniform" Visibility="Collapsed">
+                <Canvas Width="22" Height="12">
+                    <Path Stroke="{DynamicResource BatteryTintBrush}"
+                          StrokeThickness="1.4"
+                          Fill="Transparent"
+                          Data="M1.5,2.5 C1.5,1.67 2.17,1 3,1 L17,1 C17.83,1 18.5,1.67 18.5,2.5 L18.5,9.5 C18.5,10.33 17.83,11 17,11 L3,11 C2.17,11 1.5,10.33 1.5,9.5 Z"/>
+                    <Path Fill="{DynamicResource BatteryTintBrush}"
+                          Data="M19.25,4 L20.5,4 C21.05,4 21.5,4.45 21.5,5 L21.5,7 C21.5,7.55 21.05,8 20.5,8 L19.25,8 Z"/>
+                    <Rectangle Canvas.Left="3.25" Canvas.Top="2.75" Width="3.2" Height="6.5" RadiusX="0.8" RadiusY="0.8"
+                               Fill="{DynamicResource BatteryTintBrush}"/>
+                </Canvas>
+            </Viewbox>
+
+            <!-- Empty -->
+            <Viewbox x:Name="IconEmpty" Stretch="Uniform" Visibility="Collapsed">
+                <Canvas Width="22" Height="12">
+                    <Path Stroke="{DynamicResource BatteryTintBrush}"
+                          StrokeThickness="1.4"
+                          Fill="Transparent"
+                          Data="M1.5,2.5 C1.5,1.67 2.17,1 3,1 L17,1 C17.83,1 18.5,1.67 18.5,2.5 L18.5,9.5 C18.5,10.33 17.83,11 17,11 L3,11 C2.17,11 1.5,10.33 1.5,9.5 Z"/>
+                    <Path Fill="{DynamicResource BatteryTintBrush}"
+                          Data="M19.25,4 L20.5,4 C21.05,4 21.5,4.45 21.5,5 L21.5,7 C21.5,7.55 21.05,8 20.5,8 L19.25,8 Z"/>
+                    <Path Stroke="{DynamicResource BatteryTintBrush}"
+                          StrokeThickness="1.3"
+                          StrokeStartLineCap="Round"
+                          StrokeEndLineCap="Round"
+                          Data="M7.2,3.2 L12.8,8.8"/>
+                </Canvas>
+            </Viewbox>
+
+            <!-- Charging -->
+            <Viewbox x:Name="IconCharging" Stretch="Uniform" Visibility="Collapsed">
+                <Canvas Width="22" Height="12">
+                    <Path Stroke="{DynamicResource BatteryTintBrush}"
+                          StrokeThickness="1.4"
+                          Fill="Transparent"
+                          Data="M1.5,2.5 C1.5,1.67 2.17,1 3,1 L17,1 C17.83,1 18.5,1.67 18.5,2.5 L18.5,9.5 C18.5,10.33 17.83,11 17,11 L3,11 C2.17,11 1.5,10.33 1.5,9.5 Z"/>
+                    <Path Fill="{DynamicResource BatteryTintBrush}"
+                          Data="M19.25,4 L20.5,4 C21.05,4 21.5,4.45 21.5,5 L21.5,7 C21.5,7.55 21.05,8 20.5,8 L19.25,8 Z"/>
+                    <Path Fill="{DynamicResource BatteryTintBrush}"
+                          Data="M11.6,2.2 L7.4,6.55 L10.05,6.55 L9.0,9.8 L13.5,5.15 L10.7,5.15 Z"/>
+                </Canvas>
+            </Viewbox>
+        </Grid>
+
+        <TextBlock x:Name="PercentLabel"
+                   Text="{Binding PercentText, ElementName=Root}"
+                   FontSize="12"
+                   FontWeight="SemiBold"
+                   VerticalAlignment="Center"/>
+    </StackPanel>
+</UserControl>

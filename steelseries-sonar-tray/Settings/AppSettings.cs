@@ -20,6 +20,9 @@ public sealed class AppSettings
     public TrayIconStyle TrayIconStyle { get; set; } = TrayIconStyle.Auto;
     public bool MidiEnabled { get; set; }
     public float MidiRelativeStep { get; set; } = 0.02f;
+    public bool ShowDeviceName { get; set; } = true;
+    public bool ShowDeviceBattery { get; set; } = true;
+    public bool ShowDeviceConnection { get; set; } = true;
 
     public static AppSettings Load()
     {
