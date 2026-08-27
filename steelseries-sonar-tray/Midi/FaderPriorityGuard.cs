@@ -91,15 +91,9 @@ public sealed class FaderPriorityGuard : IDisposable
 
             lock (_sync)
             {
-                if (_midiOriginatedKeys.Remove(key))
-                {
-                    skipAsMidiOrigin = true;
-                    _lastHardwareVolumes[key] = current;
-                }
-                else
-                {
-                    skipAsMidiOrigin = false;
-                }
+                // Skip echo of our own PUT, but keep RememberHardwareVolume — overwriting with a
+                // possibly stale Sonar read poisons hardware and schedules a false rollback.
+                skipAsMidiOrigin = _midiOriginatedKeys.Remove(key);
 
                 if (!_lastHardwareVolumes.TryGetValue(key, out hardware))
                 {

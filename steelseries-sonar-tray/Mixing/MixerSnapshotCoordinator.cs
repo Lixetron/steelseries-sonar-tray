@@ -188,6 +188,37 @@ public sealed class MixerSnapshotCoordinator
         onLevelsChanged?.Invoke();
     }
 
+    /// <summary>
+    /// Optimistic single-channel UI update from MIDI / media keys without a full Sonar GET.
+    /// </summary>
+    public void ApplyExternalVolumeToUi(string channelId, SonarMixerPath path, float volume, bool isMuted)
+    {
+        var channel = SonarChannels.NormalizeChannel(channelId);
+        var slider = _registry.FindSlider(channel, path);
+        if (slider is null)
+        {
+            return;
+        }
+
+        _isUpdatingFromApi = true;
+        try
+        {
+            slider.Value = Math.Clamp(Math.Round(volume * 100, 1), 0, 100);
+
+            if (_registry.FindMuteToggleForSlider(slider) is ToggleButton muteToggle)
+            {
+                muteToggle.IsChecked = isMuted;
+            }
+
+            _registry.UpdateSliderVisual(slider);
+            _registry.UpdateDisplayedValues();
+        }
+        finally
+        {
+            _isUpdatingFromApi = false;
+        }
+    }
+
     private void ApplyUiState(SonarMixerSnapshot? snapshot, bool applyVolumes)
     {
         if (snapshot is null)

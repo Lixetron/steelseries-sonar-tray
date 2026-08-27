@@ -111,6 +111,40 @@ internal sealed class SonarMixerApi
         }
     }
 
+    /// <summary>
+    /// Fast volume write for continuous MIDI: status-only PUT, no JSON parse.
+    /// Sonar applies the change immediately; caller supplies UI state from the requested volume.
+    /// </summary>
+    public async Task<bool> SetVolumeLiveAsync(
+        string channel,
+        float volume,
+        SonarMixerPath path = SonarMixerPath.Monitoring,
+        CancellationToken cancellationToken = default)
+    {
+        if (!await _connection.EnsureConnectedAsync(cancellationToken).ConfigureAwait(false))
+        {
+            return false;
+        }
+
+        var session = _connection.Session;
+        volume = Math.Clamp(volume, 0f, 1f);
+        var volumeSegment = volume.ToString("0.0########", CultureInfo.InvariantCulture);
+        var url = SonarEndpoints.SetVolume(
+            session.WebServerAddress!,
+            channel,
+            volumeSegment,
+            session.IsStreamerMode,
+            path);
+
+        if (!await _transport.PutAsync(url, cancellationToken).ConfigureAwait(false))
+        {
+            _connection.Invalidate();
+            return false;
+        }
+
+        return true;
+    }
+
     public async Task<IReadOnlyDictionary<string, SonarChannelSettings>?> SetMuteAsync(
         string channel,
         bool muted,

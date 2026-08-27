@@ -9,8 +9,13 @@ namespace SonarQuickMixer.Midi;
 /// </summary>
 public sealed class MidiControlService : IDisposable
 {
-    private const int ActionThrottleMs = 16;
     private const int SnapshotPollMs = 500;
+    private const int MidiActiveWindowMs = 750;
+    /// <summary>
+    /// Cap Sonar Volume PUT rate to roughly match GG Sonar UI (~80–100 ms between writes).
+    /// Faster floods make Sonar 118+ OSD/UI jerk; our sliders stay smooth via optimistic VolumeAdjusted.
+    /// </summary>
+    private const int SonarWriteMinIntervalMs = 90;
 
     private readonly AppSettings _settings;
     private readonly MidiMappingStore _mappingStore;
@@ -23,6 +28,8 @@ public sealed class MidiControlService : IDisposable
     private readonly object _sync = new();
     private readonly SemaphoreSlim _actionGate = new(1, 1);
     private readonly Dictionary<string, float> _volumeCache = new(StringComparer.OrdinalIgnoreCase);
+    /// <summary>Last volume successfully written to Sonar per channel|path — skip redundant PUTs.</summary>
+    private readonly Dictionary<string, float> _lastSonarWrittenVolumes = new(StringComparer.OrdinalIgnoreCase);
     /// <summary>Last known mute state per channel key for LED feedback diffing.</summary>
     private readonly Dictionary<string, bool> _muteCache = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, bool> _channelAssignedLedCache = new(StringComparer.OrdinalIgnoreCase);
@@ -56,6 +63,7 @@ public sealed class MidiControlService : IDisposable
     private bool _disposed;
     private bool _absoluteRestoreRunning;
     private DateTime _lastActionUtc = DateTime.MinValue;
+    private DateTime _lastSonarWriteUtc = DateTime.MinValue;
 
     // MIDI Learn
     private string? _learnDeviceName;
@@ -111,12 +119,37 @@ public sealed class MidiControlService : IDisposable
     public event Action<MidiControlFeedback>? ControlFeedback;
     public event Action<MidiIncomingEvent>? RawEventReceived;
 
+    /// <summary>
+    /// True when a MIDI volume/mute write happened recently or pending drain is queued.
+    /// Used to avoid stale Sonar GET overwriting UI / fader-guard hardware memory.
+    /// </summary>
+    public bool WasRecentlyActive(TimeSpan? window = null)
+    {
+        var windowMs = window?.TotalMilliseconds ?? MidiActiveWindowMs;
+        lock (_sync)
+        {
+            if (_pendingAbsoluteVolumes.Count > 0 || _pendingRelativeTicks.Count > 0)
+            {
+                return true;
+            }
+
+            return (DateTime.UtcNow - _lastActionUtc).TotalMilliseconds < windowMs;
+        }
+    }
+
     public void SetEnabled(bool enabled)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
         lock (_sync)
         {
+            // Idempotent: re-applying the same state (e.g. other Settings toggles) must not
+            // re-run RestoreAbsolutePositionsAsync — Sonar 118+ treats those Volume PUTs as OSD events.
+            if (_enabled == enabled)
+            {
+                return;
+            }
+
             _enabled = enabled;
         }
 
@@ -370,12 +403,6 @@ public sealed class MidiControlService : IDisposable
 
         try
         {
-            var throttle = GetThrottleDelay();
-            if (throttle > TimeSpan.Zero)
-            {
-                await Task.Delay(throttle).ConfigureAwait(false);
-            }
-
             VolumeNotificationState? notification = null;
 
             if (binding.Action == MidiBindingAction.MuteToggle)
@@ -424,7 +451,11 @@ public sealed class MidiControlService : IDisposable
         {
             // Keep only the newest hardware position per Sonar channel/path.
             _pendingAbsoluteVolumes[key] = (binding, rawValue);
+            _lastActionUtc = DateTime.UtcNow;
         }
+
+        // Optimistic UI at MIDI event rate; Sonar catches up via coalesced live PUTs.
+        VolumeAdjusted?.Invoke(BuildLiveNotification(binding, preview));
     }
 
     private void EnqueueRelativeTicks(MidiBinding binding, int rawValue)
@@ -475,13 +506,13 @@ public sealed class MidiControlService : IDisposable
                     _pendingRelativeTicks.Clear();
                 }
 
-                var throttle = GetThrottleDelay();
-                if (throttle > TimeSpan.Zero)
+                var pace = GetSonarWriteDelay();
+                if (pace > TimeSpan.Zero)
                 {
-                    await Task.Delay(throttle).ConfigureAwait(false);
+                    await Task.Delay(pace).ConfigureAwait(false);
                 }
 
-                // After throttle, fold in anything that arrived meanwhile.
+                // After pacing, fold in anything that arrived — always send the freshest position.
                 lock (_sync)
                 {
                     if (_pendingAbsoluteVolumes.Count > 0)
@@ -528,6 +559,7 @@ public sealed class MidiControlService : IDisposable
                     }
                 }
 
+                var wroteSonar = false;
                 foreach (var (pendingBinding, rawValue) in absoluteBatch)
                 {
                     try
@@ -535,8 +567,9 @@ public sealed class MidiControlService : IDisposable
                         var notification = await ApplyAbsoluteAsync(pendingBinding, rawValue).ConfigureAwait(false);
                         if (notification.HasValue)
                         {
+                            wroteSonar = true;
                             _lastActionUtc = DateTime.UtcNow;
-                            MixerChanged?.Invoke();
+                            // VolumeAdjusted already fired optimistically on enqueue; keep a confirm tick.
                             VolumeAdjusted?.Invoke(notification.Value);
                         }
                     }
@@ -553,8 +586,8 @@ public sealed class MidiControlService : IDisposable
                         var notification = await ApplyRelativeTicksAsync(pendingBinding, ticks).ConfigureAwait(false);
                         if (notification.HasValue)
                         {
+                            wroteSonar = true;
                             _lastActionUtc = DateTime.UtcNow;
-                            MixerChanged?.Invoke();
                             VolumeAdjusted?.Invoke(notification.Value);
                         }
                     }
@@ -562,6 +595,11 @@ public sealed class MidiControlService : IDisposable
                     {
                         // MIDI control is best-effort.
                     }
+                }
+
+                if (wroteSonar)
+                {
+                    _lastSonarWriteUtc = DateTime.UtcNow;
                 }
             }
         }
@@ -588,6 +626,16 @@ public sealed class MidiControlService : IDisposable
         var volume = MidiValueParser.ToNormalizedVolume(binding.IsPitchBend, rawValue);
         _faderGuard.CancelRollbackForBinding(binding);
         _faderGuard.RememberHardwareVolume(binding, volume);
+
+        // Same as last successful Sonar write (GG also re-PUTs identical values — we skip).
+        if (IsSameAsLastSonarWrite(binding, volume))
+        {
+            CacheVolume(binding, volume);
+            _controlStateStore.SetFromBinding(binding, volume);
+            RefreshFaderMatchLedAfterHardwareMove(binding);
+            return null;
+        }
+
         _faderGuard.MarkMidiOriginated(binding.ChannelId, binding.Path);
 
         if (!await _apiClient.EnsureConnectedAsync().ConfigureAwait(false))
@@ -595,19 +643,19 @@ public sealed class MidiControlService : IDisposable
             return null;
         }
 
-        var updated = await _apiClient
-            .SetVolumeAsync(binding.ChannelId, volume, binding.Path)
-            .ConfigureAwait(false);
-
-        if (updated is null)
+        // Live path: skip response JSON parse so each paced sample stays cheap.
+        if (!await _apiClient
+                .SetVolumeLiveAsync(binding.ChannelId, volume, binding.Path)
+                .ConfigureAwait(false))
         {
             return null;
         }
 
+        RememberSonarWrite(binding, volume);
         CacheVolume(binding, volume);
         _controlStateStore.SetFromBinding(binding, volume);
         RefreshFaderMatchLedAfterHardwareMove(binding);
-        return BuildNotification(binding, updated, volume, mutedFallback: false);
+        return BuildLiveNotification(binding, volume);
     }
 
     private async Task<VolumeNotificationState?> ApplyRelativeTicksAsync(MidiBinding binding, int ticks)
@@ -625,23 +673,23 @@ public sealed class MidiControlService : IDisposable
 
         var current = await GetCurrentVolumeAsync(binding).ConfigureAwait(false);
         var newVolume = MidiValueParser.ApplyRelativeDelta(current, ticks, step);
-        if (Math.Abs(newVolume - current) <= 0.0001f)
+        if (Math.Abs(newVolume - current) <= FaderPriorityGuard.VolumeEpsilon
+            || IsSameAsLastSonarWrite(binding, newVolume))
         {
             return null;
         }
 
         _faderGuard.MarkMidiOriginated(binding.ChannelId, binding.Path);
-        var updated = await _apiClient
-            .SetVolumeAsync(binding.ChannelId, newVolume, binding.Path)
-            .ConfigureAwait(false);
-
-        if (updated is null)
+        if (!await _apiClient
+                .SetVolumeLiveAsync(binding.ChannelId, newVolume, binding.Path)
+                .ConfigureAwait(false))
         {
             return null;
         }
 
+        RememberSonarWrite(binding, newVolume);
         CacheVolume(binding, newVolume);
-        return BuildNotification(binding, updated, newVolume, mutedFallback: false);
+        return BuildLiveNotification(binding, newVolume);
     }
 
     private async Task<VolumeNotificationState?> ToggleMuteAsync(MidiBinding binding)
@@ -709,6 +757,35 @@ public sealed class MidiControlService : IDisposable
         }
     }
 
+    private bool IsSameAsLastSonarWrite(MidiBinding binding, float volume)
+    {
+        var key = FaderPriorityGuard.ChannelKey(binding.ChannelId, binding.Path);
+        var clamped = Math.Clamp(volume, 0f, 1f);
+        lock (_sync)
+        {
+            return _lastSonarWrittenVolumes.TryGetValue(key, out var last)
+                   && Math.Abs(last - clamped) <= FaderPriorityGuard.VolumeEpsilon;
+        }
+    }
+
+    private void RememberSonarWrite(MidiBinding binding, float volume)
+    {
+        var key = FaderPriorityGuard.ChannelKey(binding.ChannelId, binding.Path);
+        lock (_sync)
+        {
+            _lastSonarWrittenVolumes[key] = Math.Clamp(volume, 0f, 1f);
+        }
+    }
+
+    private void RememberSonarWrite(string channelId, SonarMixerPath path, float volume)
+    {
+        var key = FaderPriorityGuard.ChannelKey(channelId, path);
+        lock (_sync)
+        {
+            _lastSonarWrittenVolumes[key] = Math.Clamp(volume, 0f, 1f);
+        }
+    }
+
     private async Task RestoreAbsolutePositionsAsync()
     {
         lock (_sync)
@@ -752,29 +829,47 @@ public sealed class MidiControlService : IDisposable
                 if (_controlStateStore.TryGet(binding.BindingKey, out var saved))
                 {
                     _faderGuard.RememberHardwareVolume(binding, saved);
+                    CacheVolume(binding, saved);
+                    PublishAbsoluteVisual(binding, saved);
+
+                    float? sonarVolume = null;
+                    if (snapshot.Channels.TryGetValue(SonarChannels.NormalizeChannel(binding.ChannelId), out var existing))
+                    {
+                        var state = binding.Path == SonarMixerPath.Streaming
+                            ? existing.Streaming
+                            : existing.Monitoring;
+                        sonarVolume = state?.Volume;
+                    }
+
+                    if (sonarVolume is float current
+                        && Math.Abs(current - saved) <= FaderPriorityGuard.VolumeEpsilon)
+                    {
+                        RememberSonarWrite(binding, saved);
+                        continue;
+                    }
+
                     _faderGuard.MarkMidiOriginated(binding.ChannelId, binding.Path);
                     var updated = await _apiClient
                         .SetVolumeAsync(binding.ChannelId, saved, binding.Path)
                         .ConfigureAwait(false);
                     if (updated is not null)
                     {
-                        CacheVolume(binding, saved);
+                        RememberSonarWrite(binding, saved);
                         wroteSonar = true;
                     }
 
-                    PublishAbsoluteVisual(binding, saved);
                     continue;
                 }
 
                 // No saved position — seed cache/guard from Sonar without overwriting.
-                float? sonarVolume = null;
+                float? seedVolume = null;
                 if (snapshot.Channels.TryGetValue(SonarChannels.NormalizeChannel(binding.ChannelId), out var settings))
                 {
                     var state = binding.Path == SonarMixerPath.Streaming ? settings.Streaming : settings.Monitoring;
-                    sonarVolume = state?.Volume;
+                    seedVolume = state?.Volume;
                 }
 
-                if (sonarVolume is float v)
+                if (seedVolume is float v)
                 {
                     CacheVolume(binding, v);
                     _faderGuard.RememberHardwareVolume(binding, v);
@@ -872,7 +967,11 @@ public sealed class MidiControlService : IDisposable
                 }
             }
 
-            _faderGuard.ObserveSnapshot(snapshot, absolute);
+            if (!WasRecentlyActive())
+            {
+                _faderGuard.ObserveSnapshot(snapshot, absolute);
+            }
+
             SyncHardwareFeedbackFromSnapshot(snapshot, force: false);
         }
         catch
@@ -1704,6 +1803,7 @@ public sealed class MidiControlService : IDisposable
             }
 
             CacheVolume(new MidiBinding { ChannelId = channelId, Path = path }, volume);
+            RememberSonarWrite(channelId, path, volume);
 
             // Rollback restores the last absolute hardware position — persist it for the owning binding(s).
             foreach (var binding in _mappingStore.Bindings.Where(MidiControlStateStore.IsPersistableAbsoluteVolume))
@@ -1740,16 +1840,30 @@ public sealed class MidiControlService : IDisposable
             return new VolumeNotificationState(
                 channel,
                 state?.Volume ?? volumeFallback,
-                state?.Muted ?? mutedFallback);
+                state?.Muted ?? mutedFallback,
+                Path: binding.Path);
         }
 
-        return new VolumeNotificationState(channel, volumeFallback, mutedFallback);
+        return new VolumeNotificationState(channel, volumeFallback, mutedFallback, Path: binding.Path);
     }
 
-    private TimeSpan GetThrottleDelay()
+    private VolumeNotificationState BuildLiveNotification(MidiBinding binding, float volume)
     {
-        var elapsedMs = (DateTime.UtcNow - _lastActionUtc).TotalMilliseconds;
-        var remainingMs = ActionThrottleMs - elapsedMs;
+        var channel = SonarChannels.NormalizeChannel(binding.ChannelId);
+        var key = FaderPriorityGuard.ChannelKey(binding.ChannelId, binding.Path);
+        var muted = false;
+        lock (_sync)
+        {
+            _muteCache.TryGetValue(key, out muted);
+        }
+
+        return new VolumeNotificationState(channel, volume, muted, Path: binding.Path);
+    }
+
+    private TimeSpan GetSonarWriteDelay()
+    {
+        var elapsedMs = (DateTime.UtcNow - _lastSonarWriteUtc).TotalMilliseconds;
+        var remainingMs = SonarWriteMinIntervalMs - elapsedMs;
         return remainingMs > 0 ? TimeSpan.FromMilliseconds(remainingMs) : TimeSpan.Zero;
     }
 

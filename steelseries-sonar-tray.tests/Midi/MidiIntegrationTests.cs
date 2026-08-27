@@ -683,6 +683,59 @@ public class FaderPriorityGuardTests
         await Task.Delay(FaderPriorityGuard.RollbackWindowMs + 500);
         Assert.False(rollbackFired);
     }
+
+    [Fact]
+    public async Task MidiOriginated_DoesNotPoisonHardwareWithStaleSnapshot()
+    {
+        using var guard = new FaderPriorityGuard();
+        var binding = new MidiBinding
+        {
+            DeviceName = "Fader",
+            Controller = 7,
+            ChannelId = "game",
+            Mode = MidiValueMode.Absolute,
+            Path = SonarMixerPath.Monitoring
+        };
+
+        guard.RememberHardwareVolume(binding, 0.80f);
+        guard.MarkMidiOriginated(binding.ChannelId, binding.Path);
+
+        var rollbackFired = false;
+        guard.RollbackRequested += (_, _, _, _) => rollbackFired = true;
+
+        var stale = new SonarMixerSnapshot
+        {
+            IsStreamerMode = false,
+            EnabledChannels = SonarChannels.All.ToHashSet(StringComparer.OrdinalIgnoreCase),
+            Channels = new Dictionary<string, SonarChannelSettings>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["game"] = new SonarChannelSettings
+                {
+                    Monitoring = new SonarChannelState { Volume = 0.65f, Muted = false }
+                }
+            }
+        };
+
+        guard.ObserveSnapshot(stale, [binding]);
+
+        var caughtUp = new SonarMixerSnapshot
+        {
+            IsStreamerMode = false,
+            EnabledChannels = SonarChannels.All.ToHashSet(StringComparer.OrdinalIgnoreCase),
+            Channels = new Dictionary<string, SonarChannelSettings>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["game"] = new SonarChannelSettings
+                {
+                    Monitoring = new SonarChannelState { Volume = 0.80f, Muted = false }
+                }
+            }
+        };
+
+        guard.ObserveSnapshot(caughtUp, [binding]);
+
+        await Task.Delay(FaderPriorityGuard.RollbackWindowMs + 500);
+        Assert.False(rollbackFired);
+    }
 }
 
 public class MidiLayoutConstructorTests

@@ -57,6 +57,13 @@ public sealed class SonarApiClient : IDisposable
         CancellationToken cancellationToken = default) =>
         _mixer.SetVolumeAsync(channel, volume, path, cancellationToken);
 
+    public Task<bool> SetVolumeLiveAsync(
+        string channel,
+        float volume,
+        SonarMixerPath path = SonarMixerPath.Monitoring,
+        CancellationToken cancellationToken = default) =>
+        _mixer.SetVolumeLiveAsync(channel, volume, path, cancellationToken);
+
     public Task<IReadOnlyDictionary<string, SonarChannelSettings>?> SetMuteAsync(
         string channel,
         bool muted,

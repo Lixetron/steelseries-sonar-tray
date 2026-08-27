@@ -165,6 +165,7 @@ public partial class MainWindow : Window
         if (_midiControl is not null)
         {
             _midiControl.MixerChanged += ExternalMixerChanged;
+            _midiControl.VolumeAdjusted += OnMidiVolumeAdjusted;
         }
 
         Closed += (_, _) =>
@@ -173,6 +174,7 @@ public partial class MainWindow : Window
             if (_midiControl is not null)
             {
                 _midiControl.MixerChanged -= ExternalMixerChanged;
+                _midiControl.VolumeAdjusted -= OnMidiVolumeAdjusted;
             }
 
             _settingsPanel.SyncFeatureSettingsFromUi();
@@ -450,7 +452,7 @@ public partial class MainWindow : Window
                 return;
             }
 
-            _mixerSnapshot.ApplySnapshot(snapshot, applyVolumes: !IsUserAdjustingMixer());
+            _mixerSnapshot.ApplySnapshot(snapshot, applyVolumes: !IsUserAdjustingMixer() && !IsMidiRecentlyActive());
             if (_isVisibleForUser)
             {
                 _overlayLayout.LockOverlayHeight();
@@ -512,6 +514,27 @@ public partial class MainWindow : Window
         }
 
         return false;
+    }
+
+    private bool IsMidiRecentlyActive() =>
+        _midiControl?.WasRecentlyActive() == true;
+
+    private void OnMidiVolumeAdjusted(VolumeNotificationState state)
+    {
+        if (!_isVisibleForUser || state.Path is not SonarMixerPath path)
+        {
+            return;
+        }
+
+        _ = Dispatcher.BeginInvoke(new Action(() =>
+        {
+            if (!_isVisibleForUser || IsUserAdjustingMixer())
+            {
+                return;
+            }
+
+            _mixerSnapshot.ApplyExternalVolumeToUi(state.ChannelId, path, state.Volume, state.IsMuted);
+        }));
     }
 
     private void ChannelSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -959,6 +982,8 @@ public partial class MainWindow : Window
             return;
         }
 
+        var applyVolumes = !IsMidiRecentlyActive();
+
         _ = Dispatcher.BeginInvoke(new Action(async () =>
         {
             if (!_isVisibleForUser || IsUserAdjustingMixer())
@@ -968,7 +993,10 @@ public partial class MainWindow : Window
 
             try
             {
-                await _mixerSnapshot.SyncSnapshotAsync().ConfigureAwait(true);
+                // During MIDI motion, volumes come from VolumeAdjusted (optimistic).
+                // Still refresh mute/layout from GET without stomping slider positions.
+                await _mixerSnapshot.SyncSnapshotAsync(applyVolumes: applyVolumes && !IsMidiRecentlyActive())
+                    .ConfigureAwait(true);
             }
             catch
             {
