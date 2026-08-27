@@ -63,6 +63,7 @@ public partial class MainWindow : Window
         DiscordScreenshareEchoFixService discordScreenshareEchoFix,
         VolumeOverlayService volumeOverlay,
         Action applyTrayIcon,
+        Action<bool> setTrayUpdateAvailable,
         MidiControlService? midiControl = null,
         Action? openMidiSetup = null)
     {
@@ -108,7 +109,8 @@ public partial class MainWindow : Window
             UpdateNotificationDot,
             UpdateAvailablePanel,
             UpdateAvailableText,
-            OpenSettingsButton);
+            OpenSettingsButton,
+            setTrayUpdateAvailable);
 
         _mixerSnapshot = new MixerSnapshotCoordinator(_apiClient, _mixerRegistry, text => StatusText.Text = text);
         _audioVisualizer = new AudioVisualizerCoordinator(

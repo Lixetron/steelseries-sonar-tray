@@ -22,6 +22,7 @@ public partial class App : Application
     private DiscordScreenshareEchoFixService? _discordScreenshareEchoFix;
     private VolumeOverlayService? _volumeOverlay;
     private SingleInstanceManager? _singleInstance;
+    private bool _trayUpdateAvailable;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -56,6 +57,7 @@ public partial class App : Application
             _discordScreenshareEchoFix,
             _volumeOverlay,
             ApplyTrayIcon,
+            SetTrayUpdateAvailable,
             _midiControl,
             ShowMidiSetup);
         _ = new WindowInteropHelper(_mainWindow).EnsureHandle();
@@ -63,8 +65,8 @@ public partial class App : Application
 
         _notifyIcon = new WinForms.NotifyIcon
         {
-            Icon = TrayIconProvider.Load(_settings.TrayIconStyle),
-            Text = "Sonar Quick Mixer",
+            Icon = TrayIconProvider.Load(_settings.TrayIconStyle, _trayUpdateAvailable),
+            Text = BuildTrayTooltip(),
             Visible = true
         };
 
@@ -87,13 +89,30 @@ public partial class App : Application
         }
 
         var previousIcon = _notifyIcon.Icon;
-        _notifyIcon.Icon = TrayIconProvider.Load(_settings.TrayIconStyle);
+        _notifyIcon.Icon = TrayIconProvider.Load(_settings.TrayIconStyle, _trayUpdateAvailable);
+        _notifyIcon.Text = BuildTrayTooltip();
 
         if (previousIcon is not null)
         {
             previousIcon.Dispose();
         }
     }
+
+    internal void SetTrayUpdateAvailable(bool available)
+    {
+        if (_trayUpdateAvailable == available)
+        {
+            return;
+        }
+
+        _trayUpdateAvailable = available;
+        ApplyTrayIcon();
+    }
+
+    private string BuildTrayTooltip() =>
+        _trayUpdateAvailable
+            ? "Sonar Quick Mixer — update available"
+            : "Sonar Quick Mixer";
 
     private void NotifyIcon_MouseClick(object? sender, WinForms.MouseEventArgs e)
     {

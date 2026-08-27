@@ -329,6 +329,7 @@ public sealed class UpdateNotificationController
     private readonly FrameworkElement _updateAvailablePanel;
     private readonly TextBlock _updateAvailableText;
     private readonly System.Windows.Controls.Button _openSettingsButton;
+    private readonly Action<bool> _setTrayUpdateAvailable;
 
     private UpdateCheckResult? _updateCheckResult;
 
@@ -338,7 +339,8 @@ public sealed class UpdateNotificationController
         FrameworkElement updateNotificationDot,
         FrameworkElement updateAvailablePanel,
         TextBlock updateAvailableText,
-        System.Windows.Controls.Button openSettingsButton)
+        System.Windows.Controls.Button openSettingsButton,
+        Action<bool> setTrayUpdateAvailable)
     {
         _updateChecker = updateChecker;
         _settingsVersionText = settingsVersionText;
@@ -346,6 +348,7 @@ public sealed class UpdateNotificationController
         _updateAvailablePanel = updateAvailablePanel;
         _updateAvailableText = updateAvailableText;
         _openSettingsButton = openSettingsButton;
+        _setTrayUpdateAvailable = setTrayUpdateAvailable;
     }
 
     public void InitializeVersionText() =>
@@ -386,11 +389,13 @@ public sealed class UpdateNotificationController
             _updateAvailableText.Text =
                 $"Version {AppVersion.Format(result.LatestVersion)} is available on GitHub.";
             _openSettingsButton.ToolTip = "Settings — update available";
+            _setTrayUpdateAvailable(true);
             return;
         }
 
         _updateNotificationDot.Visibility = Visibility.Collapsed;
         _updateAvailablePanel.Visibility = Visibility.Collapsed;
         _openSettingsButton.ToolTip = "Settings";
+        _setTrayUpdateAvailable(false);
     }
 }
