@@ -47,6 +47,7 @@ MIDI controllers: [User guide → MIDI Setup](docs/user-guide.md#midi-setup) · 
 | Document | Contents |
 |----------|----------|
 | [User guide](docs/user-guide.md) | Features, installation, usage, settings, MIDI Setup |
+| [Changelog](CHANGELOG.md) | What's new in each release (user-facing) |
 | [Troubleshooting](docs/troubleshooting.md) | Common problems and fixes (including MIDI) |
 | [MIDI layout preset authoring](docs/midi-preset-authoring.md) | Hand-edit / DIY layout JSON schema |
 | [Architecture](docs/architecture.md) | How the app talks to Sonar, Windows audio, and MIDI |

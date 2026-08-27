@@ -30,9 +30,12 @@ Profiles: `Folder` (framework-dependent) and `SingleFile` (`win-x64`, self-conta
 
 ## Cutting a release
 
-1. Bump `<Version>` in `steelseries-sonar-tray.csproj`.
-2. Tag and push: `git tag v1.0.0 && git push origin master --tags`
-3. [Release workflow](../.github/workflows/release.yml) builds both assets and publishes to GitHub Releases.
+1. Move items from `## [Unreleased]` in [`CHANGELOG.md`](../CHANGELOG.md) into a new `## [X.Y.Z] - YYYY-MM-DD` section (user-facing notes: Added / Changed / Fixed). Update the compare links at the bottom of that file.
+2. Bump `<Version>` in `steelseries-sonar-tray.csproj` to the same `X.Y.Z`.
+3. Commit, then tag and push: `git tag vX.Y.Z && git push origin HEAD --tags`
+4. [Release workflow](../.github/workflows/release.yml) builds both assets, extracts that changelog section into the GitHub Release body (plus Downloads), and publishes the zips.
+
+The workflow **fails** if `CHANGELOG.md` has no matching `## [X.Y.Z]` section for the tag — write notes before tagging.
 
 ## Naming
 

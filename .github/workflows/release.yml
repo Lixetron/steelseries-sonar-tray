@@ -41,23 +41,77 @@ jobs:
           Compress-Archive -Path (Join-Path $singleDir '*') -DestinationPath "SonarQuickMixer-$tag-single.zip" -Force
           Compress-Archive -Path dist/* -DestinationPath "SonarQuickMixer-$tag-win-x64.zip" -Force
 
+      - name: Build release notes from CHANGELOG.md
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+          RELEASE_REPO: ${{ github.repository }}
+        run: |
+          $tag = $env:RELEASE_TAG
+          $repo = $env:RELEASE_REPO
+          $version = $tag.TrimStart('v')
+          if (-not (Test-Path 'CHANGELOG.md')) {
+            throw 'CHANGELOG.md is missing — add user-facing notes before tagging.'
+          }
+
+          $lines = Get-Content -Path 'CHANGELOG.md'
+          $header = "## [$version]"
+          $start = -1
+          for ($i = 0; $i -lt $lines.Count; $i++) {
+            if ($lines[$i].StartsWith($header)) {
+              $start = $i + 1
+              break
+            }
+          }
+          if ($start -lt 0) {
+            throw "No CHANGELOG.md section found for $version (expected a '## [$version]' heading)."
+          }
+
+          $notes = New-Object System.Collections.Generic.List[string]
+          for ($i = $start; $i -lt $lines.Count; $i++) {
+            if ($lines[$i] -match '^## ') { break }
+            $notes.Add($lines[$i])
+          }
+
+          $section = ($notes -join "`n").Trim()
+          if ([string]::IsNullOrWhiteSpace($section)) {
+            throw "CHANGELOG.md section for $version is empty."
+          }
+
+          # Quoted lines only: a leading "|" in `run: |` is invalid YAML and breaks the workflow file.
+          $downloads = @(
+            '## Downloads'
+            ''
+            '| Asset | When to use |'
+            '|-------|-------------|'
+            '| `SonarQuickMixer-*-single.zip` | **Recommended** — self-contained `SonarQuickMixer.exe` + `Presets\` (no separate .NET install) |'
+            '| `SonarQuickMixer-*-win-x64.zip` | Smaller download — extract and run `SonarQuickMixer.exe`; requires [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0) |'
+            ''
+            'Both zips unpack to `SonarQuickMixer.exe` (plain name) and include official MIDI `Presets\`.'
+            ''
+            "See the [user guide](https://github.com/$repo/blob/master/docs/user-guide.md#installation) for installation and first-run setup."
+            ''
+            "**Autostart:** open the mixer → **Settings** → enable **Start with Windows** ([details](https://github.com/$repo/blob/master/docs/user-guide.md#autostart-optional))."
+            ''
+            "Full history: [CHANGELOG.md](https://github.com/$repo/blob/master/CHANGELOG.md)"
+          ) -join "`n"
+
+          $body = @(
+            "## What's new in $tag"
+            ''
+            $section
+            ''
+            $downloads
+          ) -join "`n"
+
+          ($body -replace "`r`n", "`n").Trim() + "`n" | Set-Content -Path 'RELEASE_BODY.md' -Encoding utf8NoBOM
+          Write-Host "Wrote RELEASE_BODY.md for $tag"
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
-          body: |
-            ## Downloads
-
-            | Asset | When to use |
-            |-------|-------------|
-            | `SonarQuickMixer-*-single.zip` | **Recommended** — self-contained `SonarQuickMixer.exe` + `Presets\` (no separate .NET install) |
-            | `SonarQuickMixer-*-win-x64.zip` | Smaller download — extract and run `SonarQuickMixer.exe`; requires [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0) |
-
-            Both zips unpack to `SonarQuickMixer.exe` (plain name) and include official MIDI `Presets\`.
-
-            See the [user guide](https://github.com/${{ github.repository }}/blob/master/docs/user-guide.md#installation) for installation and first-run setup.
-
-            **Autostart:** open the mixer → **Settings** → enable **Start with Windows** ([details](https://github.com/${{ github.repository }}/blob/master/docs/user-guide.md#autostart-optional)).
+          body_path: RELEASE_BODY.md
           files: |
             SonarQuickMixer-${{ github.ref_name }}-single.zip
             SonarQuickMixer-${{ github.ref_name }}-win-x64.zip
