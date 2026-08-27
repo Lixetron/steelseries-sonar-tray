@@ -11,6 +11,7 @@ public sealed class SonarApiClient : IDisposable
     private readonly SonarConnection _connection;
     private readonly SonarMixerApi _mixer;
     private readonly SonarEchoFixApi _echoFix;
+    private readonly SonarDevicesApi _devices;
 
     public SonarApiClient()
     {
@@ -19,6 +20,7 @@ public sealed class SonarApiClient : IDisposable
         _connection = new SonarConnection(_session, discovery, modeDetector);
         _mixer = new SonarMixerApi(_transport, _connection);
         _echoFix = new SonarEchoFixApi(_transport, _connection);
+        _devices = new SonarDevicesApi(_transport, _connection);
     }
 
     public bool IsConnected => _session.IsConnected;
@@ -71,6 +73,24 @@ public sealed class SonarApiClient : IDisposable
 
     public Task<SonarEchoFixRouting?> GetEchoFixRoutingAsync(CancellationToken cancellationToken = default) =>
         _echoFix.GetRoutingAsync(cancellationToken);
+
+    public Task<IReadOnlyList<SonarAudioDevice>> GetAudioDevicesAsync(
+        CancellationToken cancellationToken = default) =>
+        _devices.GetAudioDevicesAsync(cancellationToken);
+
+    public Task<SonarDeviceSelection?> GetDeviceSelectionAsync(
+        CancellationToken cancellationToken = default) =>
+        _devices.GetDeviceSelectionAsync(cancellationToken);
+
+    public Task<bool> SetOutputDeviceAsync(
+        string deviceId,
+        CancellationToken cancellationToken = default) =>
+        _devices.SetOutputDeviceAsync(deviceId, cancellationToken);
+
+    public Task<bool> SetMicrophoneDeviceAsync(
+        string deviceId,
+        CancellationToken cancellationToken = default) =>
+        _devices.SetMicrophoneDeviceAsync(deviceId, cancellationToken);
 
     public void Dispose() => _transport.Dispose();
 }

@@ -45,4 +45,32 @@ public class SonarEndpointsTests
 
         Assert.Equal($"{BaseUrl}/streamRedirections/monitoring/redirections/game/isEnabled/true", url);
     }
+
+    [Fact]
+    public void AudioDevices_builds_expected_url()
+    {
+        Assert.Equal($"{BaseUrl}/audioDevices", SonarEndpoints.AudioDevices(BaseUrl));
+    }
+
+    [Fact]
+    public void SetClassicRedirectionDevice_url_encodes_device_id()
+    {
+        var deviceId = "{0.0.0.00000000}.{abc}";
+        var url = SonarEndpoints.SetClassicRedirectionDevice(BaseUrl, "render", deviceId);
+
+        Assert.Equal(
+            $"{BaseUrl}/classicRedirections/render/deviceId/{Uri.EscapeDataString(deviceId)}",
+            url);
+    }
+
+    [Fact]
+    public void SetStreamRedirectionDevice_builds_mic_url()
+    {
+        var deviceId = "{0.0.1.00000000}.{mic}";
+        var url = SonarEndpoints.SetStreamRedirectionDevice(BaseUrl, "mic", deviceId);
+
+        Assert.Equal(
+            $"{BaseUrl}/streamRedirections/mic/deviceId/{Uri.EscapeDataString(deviceId)}",
+            url);
+    }
 }

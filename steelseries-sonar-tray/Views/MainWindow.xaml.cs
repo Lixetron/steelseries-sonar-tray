@@ -45,6 +45,7 @@ public partial class MainWindow : Window
     private readonly MixerSnapshotCoordinator _mixerSnapshot;
     private readonly VolumeSendCoordinator _volumeSend;
     private readonly AudioVisualizerCoordinator _audioVisualizer;
+    private readonly DeviceSelectorCoordinator _deviceSelectors;
     private readonly OverlayLayoutController _overlayLayout;
     private readonly OverlayAnimationController _overlayAnimation;
     private readonly SettingsPanelController _settingsPanel;
@@ -84,6 +85,17 @@ public partial class MainWindow : Window
             MixerTabPanel,
             SettingsTabPanel);
         _overlayAnimation = new OverlayAnimationController(this, OverlayRoot);
+        _deviceSelectors = new DeviceSelectorCoordinator(
+            _apiClient,
+            OutputDeviceCombo,
+            MicrophoneDeviceCombo,
+            OutputDeviceRow,
+            MicrophoneDeviceRow,
+            DeviceSelectorsPanel,
+            () => _settings.ShowOutputDeviceSelector,
+            () => _settings.ShowMicrophoneDeviceSelector,
+            onVisibilityChanged: OnDeviceSelectorVisibilityChanged,
+            setStatusText: text => StatusText.Text = text);
         _settingsPanel = new SettingsPanelController(
             _settings,
             _mediaKeysOverride,
@@ -101,8 +113,18 @@ public partial class MainWindow : Window
             ShowDeviceNameToggle,
             ShowDeviceBatteryToggle,
             ShowDeviceConnectionToggle,
+            ShowOutputDeviceSelectorToggle,
+            ShowMicrophoneDeviceSelectorToggle,
             _midiControl,
-            MidiEnabledToggle);
+            MidiEnabledToggle,
+            onDeviceSelectorVisibilityChanged: () =>
+            {
+                _deviceSelectors.ApplyVisibility();
+                if (_isVisibleForUser && !_isShowingSettings)
+                {
+                    _ = _deviceSelectors.RefreshAsync();
+                }
+            });
         _updateNotification = new UpdateNotificationController(
             _updateChecker,
             SettingsVersionText,
@@ -278,6 +300,7 @@ public partial class MainWindow : Window
         }
 
         _ = RefreshDeviceInfoAsync();
+        _ = _deviceSelectors.RefreshAsync();
 
         _settingsSyncTimer.Start();
         UpdateLevelPollTimer();
@@ -434,6 +457,10 @@ public partial class MainWindow : Window
             }
 
             await RefreshDeviceInfoAsync().ConfigureAwait(true);
+            if (!_isShowingSettings)
+            {
+                await _deviceSelectors.RefreshAsync().ConfigureAwait(true);
+            }
         }
         catch (Exception)
         {
@@ -807,6 +834,23 @@ public partial class MainWindow : Window
         _ = RefreshDeviceInfoAsync(force: true);
     }
 
+    private void OnDeviceSelectorVisibilityChanged()
+    {
+        if (!_isVisibleForUser || _isSlideAnimating || _isViewTransitionAnimating)
+        {
+            return;
+        }
+
+        _overlayLayout.LockOverlayHeight();
+        RepositionOverlay();
+    }
+
+    private void OutputDeviceCombo_SelectionChanged(object sender, SelectionChangedEventArgs e) =>
+        _ = _deviceSelectors.OnOutputSelectionChangedAsync();
+
+    private void MicrophoneDeviceCombo_SelectionChanged(object sender, SelectionChangedEventArgs e) =>
+        _ = _deviceSelectors.OnMicrophoneSelectionChangedAsync();
+
     private async Task RefreshDeviceInfoAsync(bool force = false)
     {
         if (force)
@@ -953,6 +997,11 @@ public partial class MainWindow : Window
             return;
         }
 
+        if (IsAnyOverlayComboDropDownOpen())
+        {
+            return;
+        }
+
         Dispatcher.BeginInvoke(() =>
         {
             if (!_isVisibleForUser || _isHiding || _isSlideAnimating || _suppressDeactivateHide)
@@ -960,7 +1009,18 @@ public partial class MainWindow : Window
                 return;
             }
 
+            if (IsAnyOverlayComboDropDownOpen())
+            {
+                return;
+            }
+
             _ = HideAnimatedAsync();
         }, DispatcherPriority.Input);
     }
+
+    private bool IsAnyOverlayComboDropDownOpen() =>
+        OutputDeviceCombo.IsDropDownOpen
+        || MicrophoneDeviceCombo.IsDropDownOpen
+        || MediaKeysOverrideChannelCombo.IsDropDownOpen
+        || TrayIconStyleCombo.IsDropDownOpen;
 }

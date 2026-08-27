@@ -27,9 +27,12 @@ public sealed class SettingsPanelController
     private readonly ToggleButton _showDeviceNameToggle;
     private readonly ToggleButton _showDeviceBatteryToggle;
     private readonly ToggleButton _showDeviceConnectionToggle;
+    private readonly ToggleButton _showOutputDeviceSelectorToggle;
+    private readonly ToggleButton _showMicrophoneDeviceSelectorToggle;
     private readonly System.Windows.Controls.ComboBox _mediaKeysOverrideChannelCombo;
     private readonly FrameworkElement _mediaKeysOverrideChannelPanel;
     private readonly System.Windows.Controls.ComboBox _trayIconStyleCombo;
+    private readonly Action? _onDeviceSelectorVisibilityChanged;
 
     private bool _suppressFeatureToggleChanges;
     private bool _suppressMediaKeysChannelChange;
@@ -52,8 +55,11 @@ public sealed class SettingsPanelController
         ToggleButton showDeviceNameToggle,
         ToggleButton showDeviceBatteryToggle,
         ToggleButton showDeviceConnectionToggle,
+        ToggleButton showOutputDeviceSelectorToggle,
+        ToggleButton showMicrophoneDeviceSelectorToggle,
         MidiControlService? midiControl = null,
-        ToggleButton? midiEnabledToggle = null)
+        ToggleButton? midiEnabledToggle = null,
+        Action? onDeviceSelectorVisibilityChanged = null)
     {
         _settings = settings;
         _mediaKeysOverride = mediaKeysOverride;
@@ -70,12 +76,17 @@ public sealed class SettingsPanelController
         _showDeviceNameToggle = showDeviceNameToggle;
         _showDeviceBatteryToggle = showDeviceBatteryToggle;
         _showDeviceConnectionToggle = showDeviceConnectionToggle;
+        _showOutputDeviceSelectorToggle = showOutputDeviceSelectorToggle;
+        _showMicrophoneDeviceSelectorToggle = showMicrophoneDeviceSelectorToggle;
         _mediaKeysOverrideChannelCombo = mediaKeysOverrideChannelCombo;
         _mediaKeysOverrideChannelPanel = mediaKeysOverrideChannelPanel;
         _trayIconStyleCombo = trayIconStyleCombo;
+        _onDeviceSelectorVisibilityChanged = onDeviceSelectorVisibilityChanged;
     }
 
     public bool AudioVisualizerEnabled => _settings.AudioVisualizerEnabled;
+    public bool ShowOutputDeviceSelector => _settings.ShowOutputDeviceSelector;
+    public bool ShowMicrophoneDeviceSelector => _settings.ShowMicrophoneDeviceSelector;
 
     public void InitializeFromSettings()
     {
@@ -95,6 +106,8 @@ public sealed class SettingsPanelController
             _showDeviceNameToggle.IsChecked = _settings.ShowDeviceName;
             _showDeviceBatteryToggle.IsChecked = _settings.ShowDeviceBattery;
             _showDeviceConnectionToggle.IsChecked = _settings.ShowDeviceConnection;
+            _showOutputDeviceSelectorToggle.IsChecked = _settings.ShowOutputDeviceSelector;
+            _showMicrophoneDeviceSelectorToggle.IsChecked = _settings.ShowMicrophoneDeviceSelector;
         }
         finally
         {
@@ -108,6 +121,7 @@ public sealed class SettingsPanelController
         ApplyMediaKeysOverrideSettings();
         ApplyDiscordScreenshareEchoFixSettings();
         ApplyMidiSettings();
+        _onDeviceSelectorVisibilityChanged?.Invoke();
     }
 
     public void SyncFeatureSettingsFromUi()
@@ -125,6 +139,8 @@ public sealed class SettingsPanelController
         _settings.ShowDeviceName = _showDeviceNameToggle.IsChecked == true;
         _settings.ShowDeviceBattery = _showDeviceBatteryToggle.IsChecked == true;
         _settings.ShowDeviceConnection = _showDeviceConnectionToggle.IsChecked == true;
+        _settings.ShowOutputDeviceSelector = _showOutputDeviceSelectorToggle.IsChecked == true;
+        _settings.ShowMicrophoneDeviceSelector = _showMicrophoneDeviceSelectorToggle.IsChecked == true;
     }
 
     public void OnFeatureToggleChanged(object sender, RoutedEventArgs e, Action onVisualizerChanged)
@@ -146,6 +162,7 @@ public sealed class SettingsPanelController
         ApplyMediaKeysOverrideSettings();
         ApplyDiscordScreenshareEchoFixSettings();
         ApplyMidiSettings();
+        _onDeviceSelectorVisibilityChanged?.Invoke();
 
         if (!_settings.VolumeOverlayEnabled)
         {

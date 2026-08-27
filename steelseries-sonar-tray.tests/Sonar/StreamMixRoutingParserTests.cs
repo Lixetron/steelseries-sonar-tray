@@ -74,6 +74,45 @@ public class StreamMixRoutingParserTests
         Assert.Equal("device-123", deviceId);
     }
 
+    [Fact]
+    public void TryReadClassicRedirectionDeviceId_reads_array_format()
+    {
+        using var document = JsonDocument.Parse("""
+            [
+              { "id": "game", "deviceId": "out-1", "isRunning": true },
+              { "id": "mic", "deviceId": "mic-1", "isRunning": true },
+              { "id": "media", "deviceId": "", "isRunning": false }
+            ]
+            """);
+
+        Assert.Equal(
+            "out-1",
+            StreamMixRoutingParser.TryReadClassicRedirectionDeviceId(document.RootElement, "game"));
+        Assert.Equal(
+            "mic-1",
+            StreamMixRoutingParser.TryReadClassicRedirectionDeviceId(document.RootElement, "mic"));
+        Assert.Null(
+            StreamMixRoutingParser.TryReadClassicRedirectionDeviceId(document.RootElement, "media"));
+    }
+
+    [Fact]
+    public void TryReadClassicRedirectionDeviceId_reads_object_format()
+    {
+        using var document = JsonDocument.Parse("""
+            {
+              "game": { "deviceId": "out-2" },
+              "mic": { "deviceId": "mic-2" }
+            }
+            """);
+
+        Assert.Equal(
+            "out-2",
+            StreamMixRoutingParser.TryReadClassicRedirectionDeviceId(document.RootElement, "game"));
+        Assert.Equal(
+            "mic-2",
+            StreamMixRoutingParser.TryReadClassicRedirectionDeviceId(document.RootElement, "mic"));
+    }
+
     [Theory]
     [InlineData(null, true, true)]
     [InlineData(true, true, true)]

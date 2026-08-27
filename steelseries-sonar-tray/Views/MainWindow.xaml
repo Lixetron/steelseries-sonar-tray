@@ -117,6 +117,28 @@
                               HorizontalScrollBarVisibility="Disabled"
                               VerticalAlignment="Stretch">
                     <StackPanel x:Name="ChannelsPanel">
+                    <StackPanel x:Name="DeviceSelectorsPanel" Margin="0,0,0,10">
+                        <StackPanel x:Name="OutputDeviceRow" Margin="0,0,0,8">
+                            <TextBlock Text="Output"
+                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                       FontSize="12"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,4"/>
+                            <ComboBox x:Name="OutputDeviceCombo"
+                                      Style="{StaticResource FluentComboBoxStyle}"
+                                      SelectionChanged="OutputDeviceCombo_SelectionChanged"/>
+                        </StackPanel>
+                        <StackPanel x:Name="MicrophoneDeviceRow">
+                            <TextBlock Text="Microphone"
+                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                       FontSize="12"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,4"/>
+                            <ComboBox x:Name="MicrophoneDeviceCombo"
+                                      Style="{StaticResource FluentComboBoxStyle}"
+                                      SelectionChanged="MicrophoneDeviceCombo_SelectionChanged"/>
+                        </StackPanel>
+                    </StackPanel>
                     <StackPanel x:Name="MasterChannelSection" Margin="0,0,0,8">
                         <TextBlock Text="Master"
                                    Foreground="{StaticResource TextPrimaryBrush}"
@@ -471,6 +493,28 @@
                             HorizontalAlignment="Left"
                             Margin="0,0,0,10"
                             Click="OpenMidiSetupButton_Click"/>
+                    <TextBlock Text="Device selectors"
+                               Foreground="{StaticResource TextPrimaryBrush}"
+                               FontSize="12"
+                               FontWeight="SemiBold"
+                               Margin="0,8,0,10"/>
+                    <TextBlock Text="Dropdowns above the volume sliders for Sonar output and microphone routing."
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               FontSize="11"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,8"/>
+                    <CheckBox x:Name="ShowOutputDeviceSelectorToggle"
+                              Content="Show output device selector"
+                              Style="{StaticResource FluentToggleStyle}"
+                              Margin="0,0,0,10"
+                              Checked="FeatureToggle_Changed"
+                              Unchecked="FeatureToggle_Changed"/>
+                    <CheckBox x:Name="ShowMicrophoneDeviceSelectorToggle"
+                              Content="Show microphone selector"
+                              Style="{StaticResource FluentToggleStyle}"
+                              Margin="0,0,0,10"
+                              Checked="FeatureToggle_Changed"
+                              Unchecked="FeatureToggle_Changed"/>
                     <TextBlock Text="Device info"
                                Foreground="{StaticResource TextPrimaryBrush}"
                                FontSize="12"

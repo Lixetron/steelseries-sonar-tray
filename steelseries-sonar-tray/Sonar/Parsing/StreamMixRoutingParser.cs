@@ -116,6 +116,29 @@ internal static class StreamMixRoutingParser
 
     public static string? TryReadClassicRedirectionDeviceId(JsonElement root, string channel)
     {
+        if (root.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var entry in root.EnumerateArray())
+            {
+                if (!entry.TryGetProperty("id", out var idElement)
+                    || !string.Equals(idElement.GetString(), channel, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                if (entry.TryGetProperty("deviceId", out var deviceIdElement)
+                    && deviceIdElement.ValueKind == JsonValueKind.String)
+                {
+                    var deviceId = deviceIdElement.GetString();
+                    return string.IsNullOrWhiteSpace(deviceId) ? null : deviceId;
+                }
+
+                return null;
+            }
+
+            return null;
+        }
+
         if (root.ValueKind != JsonValueKind.Object)
         {
             return null;
@@ -126,9 +149,11 @@ internal static class StreamMixRoutingParser
             return null;
         }
 
-        if (channelElement.TryGetProperty("deviceId", out var deviceIdElement))
+        if (channelElement.TryGetProperty("deviceId", out var objectDeviceIdElement)
+            && objectDeviceIdElement.ValueKind == JsonValueKind.String)
         {
-            return deviceIdElement.GetString();
+            var deviceId = objectDeviceIdElement.GetString();
+            return string.IsNullOrWhiteSpace(deviceId) ? null : deviceId;
         }
 
         return null;

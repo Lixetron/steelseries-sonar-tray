@@ -23,6 +23,8 @@ public sealed class AppSettings
     public bool ShowDeviceName { get; set; } = true;
     public bool ShowDeviceBattery { get; set; } = true;
     public bool ShowDeviceConnection { get; set; } = true;
+    public bool ShowOutputDeviceSelector { get; set; } = true;
+    public bool ShowMicrophoneDeviceSelector { get; set; } = true;
 
     public static AppSettings Load()
     {
