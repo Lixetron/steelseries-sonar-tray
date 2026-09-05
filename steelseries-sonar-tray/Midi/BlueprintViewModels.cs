@@ -2,7 +2,6 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
-using System.Windows.Threading;
 using SonarQuickMixer.Sonar;
 using Media = System.Windows.Media;
 
@@ -10,33 +9,11 @@ namespace SonarQuickMixer.Midi;
 
 public sealed class BlueprintControlVm : IBlueprintFormCell
 {
-    /// <summary>
-    /// Visual degrees per relative MIDI tick (before smoothing).
-    /// Calibrated iteratively against common relative MIDI knobs (physical ≈ UI).
-    /// </summary>
-    internal const double RelativeDegreesPerTick = 3.43;
-
-    /// <summary>
-    /// Fraction of the remaining gap applied immediately on each MIDI tick (rest eases in 1–2 frames).
-    /// High = tight to the hand; low = jelly lag.
-    /// </summary>
-    private const double RelativeInstantCatchup = 0.82;
-
-    /// <summary>Exponential follow rate for the leftover gap (~settles in ~2 frames at 60 Hz).</summary>
-    private const double RelativeResponsePerSecond = 55.0;
-
-    /// <summary>Discard backlog beyond this so direction reversals stay crisp.</summary>
-    private const double RelativeMaxLeadDegrees = 28.0;
-
-    private const double RelativeSnapDegrees = 0.4;
-
-    private static readonly TimeSpan NeedleFrameInterval = TimeSpan.FromMilliseconds(16);
+    /// <summary>Visual degrees per relative MIDI tick — kept for tests; see <see cref="RelativeNeedleAnimator"/>.</summary>
+    internal const double RelativeDegreesPerTick = RelativeNeedleAnimator.DegreesPerTick;
 
     private float _normalizedValue;
-    private double _relativeNeedleDegrees;
-    private double _relativeNeedleTargetDegrees;
-    private DispatcherTimer? _relativeNeedleTimer;
-    private DateTime _relativeNeedleLastTickUtc;
+    private RelativeNeedleAnimator? _relativeNeedleAnimator;
     private bool _isLearning;
     private bool _isSelected;
     private bool _hasUnsavedChanges;
@@ -135,8 +112,12 @@ public sealed class BlueprintControlVm : IBlueprintFormCell
     /// </summary>
     public double NeedleAngle =>
         UsesRelativeNeedle
-            ? _relativeNeedleDegrees
+            ? NeedleAnimator.Degrees
             : -135 + (NormalizedValue * 270);
+
+    /// <summary>Lazily created — absolute controls never spin one up.</summary>
+    private RelativeNeedleAnimator NeedleAnimator =>
+        _relativeNeedleAnimator ??= new RelativeNeedleAnimator(() => OnPropertyChanged(nameof(NeedleAngle)));
 
     public bool UsesRelativeNeedle =>
         Type == MidiControlType.Encoder && Mode == MidiValueMode.Relative;
@@ -160,126 +141,14 @@ public sealed class BlueprintControlVm : IBlueprintFormCell
                 return;
             }
 
-            QueueRelativeSpin(ticks);
+            NeedleAnimator.QueueSpin(ticks);
             return;
         }
 
         NormalizedValue = MidiValueParser.ToNormalizedVolume(isPitchBend, rawValue);
     }
 
-    public void ResetRelativeNeedle(double degrees = 0)
-    {
-        StopRelativeNeedleTimer();
-        _relativeNeedleDegrees = degrees;
-        _relativeNeedleTargetDegrees = degrees;
-        OnPropertyChanged(nameof(NeedleAngle));
-    }
-
-    private void QueueRelativeSpin(int ticks)
-    {
-        _relativeNeedleTargetDegrees += ticks * RelativeDegreesPerTick;
-        ClampRelativeLead();
-
-        // Unit tests / no WPF pump: snap so assertions stay deterministic.
-        if (System.Windows.Application.Current?.Dispatcher is null)
-        {
-            _relativeNeedleDegrees = _relativeNeedleTargetDegrees;
-            OnPropertyChanged(nameof(NeedleAngle));
-            return;
-        }
-
-        // Most of the motion lands on the MIDI event itself — avoids "following behind the hand".
-        var gap = _relativeNeedleTargetDegrees - _relativeNeedleDegrees;
-        _relativeNeedleDegrees += gap * RelativeInstantCatchup;
-        OnPropertyChanged(nameof(NeedleAngle));
-
-        if (Math.Abs(_relativeNeedleTargetDegrees - _relativeNeedleDegrees) <= RelativeSnapDegrees)
-        {
-            FinishRelativeNeedle();
-            return;
-        }
-
-        EnsureRelativeNeedleTimer();
-    }
-
-    private void ClampRelativeLead()
-    {
-        var lead = _relativeNeedleTargetDegrees - _relativeNeedleDegrees;
-        if (Math.Abs(lead) <= RelativeMaxLeadDegrees)
-        {
-            return;
-        }
-
-        _relativeNeedleTargetDegrees =
-            _relativeNeedleDegrees + (Math.Sign(lead) * RelativeMaxLeadDegrees);
-    }
-
-    private void EnsureRelativeNeedleTimer()
-    {
-        if (_relativeNeedleTimer is not null)
-        {
-            return;
-        }
-
-        _relativeNeedleLastTickUtc = DateTime.UtcNow;
-        var timer = new DispatcherTimer(DispatcherPriority.Render)
-        {
-            Interval = NeedleFrameInterval
-        };
-        timer.Tick += RelativeNeedleTimer_Tick;
-        _relativeNeedleTimer = timer;
-        timer.Start();
-    }
-
-    private void RelativeNeedleTimer_Tick(object? sender, EventArgs e)
-    {
-        var now = DateTime.UtcNow;
-        var dt = Math.Clamp((now - _relativeNeedleLastTickUtc).TotalSeconds, 0.001, 0.05);
-        _relativeNeedleLastTickUtc = now;
-
-        var remaining = _relativeNeedleTargetDegrees - _relativeNeedleDegrees;
-        if (Math.Abs(remaining) <= RelativeSnapDegrees)
-        {
-            FinishRelativeNeedle();
-            return;
-        }
-
-        // Exponential ease: leftover gap closes quickly without a long rubber-band trail.
-        var alpha = 1.0 - Math.Exp(-RelativeResponsePerSecond * dt);
-        _relativeNeedleDegrees += remaining * alpha;
-        OnPropertyChanged(nameof(NeedleAngle));
-    }
-
-    private void FinishRelativeNeedle()
-    {
-        _relativeNeedleDegrees = WrapDegrees(_relativeNeedleTargetDegrees);
-        _relativeNeedleTargetDegrees = _relativeNeedleDegrees;
-        OnPropertyChanged(nameof(NeedleAngle));
-        StopRelativeNeedleTimer();
-    }
-
-    private void StopRelativeNeedleTimer()
-    {
-        if (_relativeNeedleTimer is null)
-        {
-            return;
-        }
-
-        _relativeNeedleTimer.Stop();
-        _relativeNeedleTimer.Tick -= RelativeNeedleTimer_Tick;
-        _relativeNeedleTimer = null;
-    }
-
-    private static double WrapDegrees(double degrees)
-    {
-        degrees %= 360.0;
-        if (degrees < 0)
-        {
-            degrees += 360.0;
-        }
-
-        return degrees;
-    }
+    public void ResetRelativeNeedle(double degrees = 0) => NeedleAnimator.Reset(degrees);
 
     public bool IsLearning
     {
