@@ -107,6 +107,33 @@ flowchart LR
 - **Blueprint UI:** `MidiConfigWindow` (+ dark DWM title bar) renders vector controls from declarative JSON (`Presets/` then `%LocalAppData%\Lixetron\SonarQuickMixer\UserPresets\`).
 - **Mappings:** `%LocalAppData%\Lixetron\SonarQuickMixer\midi-mappings.json`.
 
+### `MidiConfigController` — one class, split across files
+
+`MidiConfigController` backs the MIDI Setup window as `DataContext`. Its ~90-member public
+surface (bound from XAML and driven end-to-end by `MidiIntegrationTests.cs`) is a single
+cohesive class — device state, the draft layout, binding drafts, and dirty-flags are all
+read/written across every responsibility below — so it stays one `sealed partial class`
+rather than being split into separate collaborator classes with their own state. The **file**
+is split by concern purely to keep any one file a manageable size:
+
+| File | Responsibility |
+|------|-----------------|
+| `MidiConfigController.cs` | Fields, ctor, `INotifyPropertyChanged`/`IDisposable`, computed properties, cross-cutting coordinators (`ReloadLayoutForSelectedDevice`, `RefreshLayoutPresets`, `CreateControlVm`, …) |
+| `MidiConfigController.Devices.cs` | Device list refresh, enable/disable (Use device), hide/reveal, factory-binding seeding |
+| `MidiConfigController.BindingDrafts.cs` | Stage/Save/Discard/Clear channel-mode-action assignments (the yellow-chrome workflow) |
+| `MidiConfigController.Presets.cs` | Layout-constructor mode entry/exit, preset use/delete/save-as/rename/export/import |
+| `MidiConfigController.BlueprintEditor.cs` | Constructor drag-drop tree editing (`MidiLayoutTreeOps` calls), LED feedback tag editing, unsaved-indicator tracking — kept together because both share the draft-layout/draft-feedback state |
+| `MidiConfigController.Discovery.cs` | Explicit "Learn MIDI" + passive auto-discovery of unbound hardware (CC-shape heuristics via the private `CcProbe`) |
+
+`Views/MidiConfigWindow.xaml.cs` follows the same pattern: the blueprint drag&drop
+hit-testing block (visual-tree walking, drop-zone geometry) lives in
+`Views/MidiConfigWindow.DragDrop.cs` as a second file of the same partial `Window` class, so
+the window's dialog/selection/combo-sync code isn't buried under ~900 lines of hit-testing.
+
+`Midi/BlueprintViewModels.cs`'s `BlueprintControlVm` composes a `Midi/RelativeNeedleAnimator.cs`
+for the relative-encoder needle animation (a `DispatcherTimer`-driven easing engine) instead of
+implementing the timer itself — the VM stays presentation state, the animator owns the timing.
+
 ## Sonar API layer
 
 `SonarApiClient` is a thin **facade** over focused internal components. Public API is unchanged; callers still use `new SonarApiClient()`.
@@ -190,12 +217,14 @@ Sonar/
 | `Mixing/MixerControlRegistry.cs` | Maps XAML sliders/toggles to Sonar channels and paths |
 | `Mixing/MixerSnapshotCoordinator.cs` | Applies API snapshots to UI; status text and cache |
 | `Mixing/VolumeSendCoordinator.cs` | Throttled volume writes while dragging sliders |
+| `Mixing/MuteMixToggleCoordinator.cs` | Mute/mix-included toggle clicks, optimistic revert on failure |
 | `Mixing/AudioVisualizerCoordinator.cs` | Live level meters on mixer sliders |
 | `Midi/MidiControlService.cs` | MIDI → Sonar orchestration (absolute/relative, learn, overlay) |
 | `Midi/MidiInputHub.cs` | Concurrent multi-device DryWetMidi listeners |
 | `Midi/FaderPriorityGuard.cs` | 3s hardware fader rollback / anti-fighting |
 | `Midi/PresetCatalog.cs` | Official + AppData layout JSON resolution |
-| `Views/MidiConfigWindow.xaml(.cs)` | Blueprint config UI, staging, Learn, dark title bar |
+| `Midi/MidiConfigController*.cs` | MIDI Setup `DataContext`, split by concern — see [MIDI integration](#midiconfigcontroller--one-class-split-across-files) |
+| `Views/MidiConfigWindow.xaml(.cs)` / `.DragDrop.cs` | Blueprint config UI, staging, Learn, dark title bar; drag&drop hit-testing in its own file |
 | `Services/DiscordScreenshareEchoFixService.cs` / `Sonar/Models/SonarEchoFixRouting.cs` | Per-app Discord mute on WASAPI endpoints |
 | `Audio/*` | WASAPI device probes and channel level monitor |
 | `Views/MainWindow.xaml(.cs)` | Overlay shell; delegates mixer/settings logic to coordinators |
