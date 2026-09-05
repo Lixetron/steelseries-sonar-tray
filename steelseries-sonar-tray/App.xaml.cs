@@ -1,11 +1,13 @@
 using System.Drawing;
 using System.Windows;
 using System.Windows.Interop;
+using System.Windows.Threading;
 using Application = System.Windows.Application;
 using SonarQuickMixer.Midi;
 using SonarQuickMixer.Services;
 using SonarQuickMixer.Settings;
 using SonarQuickMixer.Tray;
+using SonarQuickMixer.Updates;
 using SonarQuickMixer.Views;
 using WinForms = System.Windows.Forms;
 
@@ -23,9 +25,15 @@ public partial class App : Application
     private VolumeOverlayService? _volumeOverlay;
     private SingleInstanceManager? _singleInstance;
     private bool _trayUpdateAvailable;
+    private UpdateService? _updateService;
+    private DispatcherTimer? _updateCheckTimer;
+    private UpdateWindow? _updateWindow;
 
     protected override void OnStartup(StartupEventArgs e)
     {
+        // Apply any pending updates from previous startup
+        Launcher.ApplyPendingUpdateIfExists();
+
         _singleInstance = new SingleInstanceManager();
         if (!_singleInstance.TryAcquireOwnership())
         {
@@ -79,6 +87,19 @@ public partial class App : Application
         _notifyIcon.ContextMenuStrip = contextMenu;
 
         _singleInstance.StartListening(() => ShowMixer());
+
+        // Initialize update service and start checking for updates
+        _updateService = new UpdateService();
+        _updateService.UpdateCheckCompleted += UpdateService_UpdateCheckCompleted;
+        _updateService.CheckForUpdateAsync();
+
+        // Check for updates every 30 minutes
+        _updateCheckTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromMinutes(30)
+        };
+        _updateCheckTimer.Tick += (_, _) => _updateService?.CheckForUpdateAsync();
+        _updateCheckTimer.Start();
     }
 
     internal void ApplyTrayIcon()
@@ -166,6 +187,37 @@ public partial class App : Application
         Shutdown();
     }
 
+    private void UpdateService_UpdateCheckCompleted(object? sender, UpdateCheckEventArgs e)
+    {
+        Dispatcher.Invoke(() =>
+        {
+            if (e.IsUpdateAvailable && e.Result is not null)
+            {
+                SetTrayUpdateAvailable(true);
+                ShowUpdateWindow(e.Result.LatestVersion);
+            }
+        });
+    }
+
+    private void ShowUpdateWindow(Version targetVersion)
+    {
+        if (_updateService is null)
+        {
+            return;
+        }
+
+        // Only show one update window at a time
+        if (_updateWindow is { IsLoaded: true })
+        {
+            _updateWindow.Activate();
+            return;
+        }
+
+        _updateWindow = new UpdateWindow(targetVersion, _updateService);
+        _updateWindow.Closed += (_, _) => _updateWindow = null;
+        _updateWindow.Show();
+    }
+
     protected override void OnExit(ExitEventArgs e)
     {
         if (_notifyIcon is not null)
@@ -189,6 +241,12 @@ public partial class App : Application
 
         _volumeOverlay?.Dispose();
         _volumeOverlay = null;
+
+        _updateCheckTimer?.Stop();
+        _updateCheckTimer = null;
+
+        _updateService?.Dispose();
+        _updateService = null;
 
         _singleInstance?.Dispose();
         _singleInstance = null;

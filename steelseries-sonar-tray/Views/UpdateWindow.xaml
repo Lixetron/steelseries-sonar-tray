@@ -1,0 +1,126 @@
+<Window x:Class="SonarQuickMixer.Views.UpdateWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Software Update"
+        SizeToContent="WidthAndHeight"
+        WindowStartupLocation="CenterScreen"
+        Background="#F5F5F5"
+        Foreground="#333333"
+        WindowStyle="SingleBorderWindow"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        Topmost="True"
+        Padding="24">
+
+    <StackPanel MinWidth="400">
+
+        <!-- Header -->
+        <StackPanel Margin="0,0,0,4">
+            <TextBlock FontSize="18" FontWeight="Bold">
+                Update Available
+            </TextBlock>
+            <TextBlock Name="VersionText" FontSize="12" Foreground="#666666" Margin="0,2,0,0" />
+        </StackPanel>
+
+        <Separator Margin="0,12,0,12" Background="#CCCCCC" Height="1" />
+
+        <!-- Downloading State -->
+        <StackPanel Name="DownloadingPanel" Visibility="Visible">
+            <TextBlock Name="StatusText" FontSize="13" Margin="0,0,0,12">
+                Downloading update...
+            </TextBlock>
+
+            <ProgressBar Name="ProgressBar"
+                         Height="6"
+                         Maximum="100"
+                         Foreground="#4CAF50"
+                         Background="#E8E8E8"
+                         Margin="0,0,0,8" />
+
+            <TextBlock Name="ProgressText"
+                       FontSize="11"
+                       Foreground="#666666"
+                       TextAlignment="Center"
+                       Margin="0,0,0,12" />
+
+            <StackPanel Orientation="Horizontal"
+                        HorizontalAlignment="Right"
+                        Margin="0,0,0,0">
+                <Button Name="CancelButton"
+                        Padding="12,6"
+                        Background="Transparent"
+                        BorderBrush="#CCCCCC"
+                        BorderThickness="1"
+                        Foreground="#333333"
+                        Click="CancelButton_Click"
+                        Cursor="Hand">
+                    Cancel
+                </Button>
+            </StackPanel>
+        </StackPanel>
+
+        <!-- Ready State -->
+        <StackPanel Name="ReadyPanel" Visibility="Collapsed">
+            <TextBlock TextWrapping="Wrap" LineHeight="20" Margin="0,0,0,12">
+                <Run Text="✅ Update downloaded and ready to install." />
+                <LineBreak />
+                <Run Text="Restart the application to apply the update, or it will be applied automatically on next startup." />
+            </TextBlock>
+
+            <StackPanel Orientation="Horizontal"
+                        HorizontalAlignment="Right"
+                        Margin="0,0,0,0">
+                <Button Name="LaterButton"
+                        Padding="12,6"
+                        Background="Transparent"
+                        BorderBrush="#CCCCCC"
+                        BorderThickness="1"
+                        Foreground="#333333"
+                        Margin="0,0,8,0"
+                        Click="LaterButton_Click"
+                        Cursor="Hand">
+                    Later
+                </Button>
+                <Button Name="RestartButton"
+                        Padding="12,6"
+                        Background="#4CAF50"
+                        Foreground="White"
+                        Click="RestartButton_Click"
+                        Cursor="Hand">
+                    Restart Now
+                </Button>
+            </StackPanel>
+        </StackPanel>
+
+        <!-- Failed State -->
+        <StackPanel Name="FailedPanel" Visibility="Collapsed">
+            <TextBlock TextWrapping="Wrap"
+                       Foreground="#D32F2F"
+                       LineHeight="20"
+                       Margin="0,0,0,12">
+                ❌ Failed to download the update. Please try again or visit
+                <Hyperlink NavigateUri="https://github.com/lixetron/steelseries-sonar-tray/releases">
+                    GitHub Releases
+                </Hyperlink>
+                .
+            </TextBlock>
+
+            <StackPanel Orientation="Horizontal"
+                        HorizontalAlignment="Right"
+                        Margin="0,0,0,0">
+                <Button Name="CloseButton"
+                        Padding="12,6"
+                        Background="Transparent"
+                        BorderBrush="#CCCCCC"
+                        BorderThickness="1"
+                        Foreground="#333333"
+                        Click="CloseButton_Click"
+                        Cursor="Hand">
+                    Close
+                </Button>
+            </StackPanel>
+        </StackPanel>
+
+    </StackPanel>
+
+</Window>
