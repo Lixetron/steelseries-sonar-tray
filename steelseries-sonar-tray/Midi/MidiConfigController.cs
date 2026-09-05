@@ -1218,21 +1218,6 @@ public sealed class MidiConfigController : INotifyPropertyChanged, IDisposable
         return true;
     }
 
-    public void UpdateBindingDetails(BlueprintControlVm control, string? channelIdOrDisplayName, MidiValueMode mode, MidiBindingAction action)
-    {
-        StageBindingAssignment(control, channelIdOrDisplayName, mode, action);
-    }
-
-    public Task ConfirmAndUpdateBindingAsync(
-        BlueprintControlVm control,
-        string? channelIdOrDisplayName,
-        MidiValueMode mode,
-        MidiBindingAction action)
-    {
-        StageBindingAssignment(control, channelIdOrDisplayName, mode, action);
-        return Task.CompletedTask;
-    }
-
     /// <summary>Removes hardware discovery and Sonar assignment for this blueprint slot (persisted immediately).</summary>
     public void ClearBinding(BlueprintControlVm control)
     {
@@ -1459,12 +1444,6 @@ public sealed class MidiConfigController : INotifyPropertyChanged, IDisposable
         ReloadLayoutForSelectedDevice();
         StatusText = $"Deleted user preset “{fileName}”. Switched to official layout.";
         return true;
-    }
-
-    [Obsolete("Use UseOfficialLayoutPreset / DeleteSelectedUserPreset for multi-preset support.")]
-    public bool RestoreFactoryLayout()
-    {
-        return UseOfficialLayoutPreset();
     }
 
     /// <summary>
@@ -2187,10 +2166,6 @@ public sealed class MidiConfigController : INotifyPropertyChanged, IDisposable
             ? MidiFeedbackSource.ChannelAssigned
             : source;
     }
-
-    [Obsolete("Use SetControlFeedbackFromTag.")]
-    public bool SetControlFeedbackSource(string controlId, MidiFeedbackSource source) =>
-        SetControlFeedback(controlId, source, MidiFeedbackStyle.Solid);
 
     private static void ApplyFeedbackToLayoutControl(
         MidiLayoutControl control,
@@ -3611,32 +3586,6 @@ public sealed class MidiConfigController : INotifyPropertyChanged, IDisposable
         }
 
         return vm;
-    }
-
-    private MidiBinding? FindStoredBindingForControl(BlueprintControlVm control)
-    {
-        if (control.Controller is int cc)
-        {
-            var byCc = _midi.MappingStore.Bindings.FirstOrDefault(b =>
-                b.Controller == cc
-                && b.IsNote == control.IsNote
-                && b.IsPitchBend == control.IsPitchBend
-                && (string.Equals(b.ControlId, control.Id, StringComparison.OrdinalIgnoreCase)
-                    || (!string.IsNullOrWhiteSpace(SelectedDeviceName)
-                        && DevicesShareProduct(b.DeviceName, SelectedDeviceName))));
-            if (byCc is not null)
-            {
-                return byCc;
-            }
-        }
-
-        if (!string.IsNullOrWhiteSpace(SelectedDeviceName))
-        {
-            return FindBindingForControl(SelectedDeviceName, control.Id);
-        }
-
-        return _midi.MappingStore.Bindings.FirstOrDefault(b =>
-            string.Equals(b.ControlId, control.Id, StringComparison.OrdinalIgnoreCase));
     }
 
     private static void ResetControlVm(BlueprintControlVm control)
