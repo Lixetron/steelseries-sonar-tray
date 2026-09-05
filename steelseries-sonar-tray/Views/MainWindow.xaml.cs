@@ -44,6 +44,7 @@ public partial class MainWindow : Window
     private readonly MixerControlRegistry _mixerRegistry = new();
     private readonly MixerSnapshotCoordinator _mixerSnapshot;
     private readonly VolumeSendCoordinator _volumeSend;
+    private readonly MuteMixToggleCoordinator _muteMixToggle;
     private readonly AudioVisualizerCoordinator _audioVisualizer;
     private readonly DeviceSelectorCoordinator _deviceSelectors;
     private readonly OverlayLayoutController _overlayLayout;
@@ -146,6 +147,14 @@ public partial class MainWindow : Window
             () => _mixerSnapshot.IsUpdatingFromApi,
             settings => _mixerSnapshot.ApplyChannelSettingsToUi(settings, onLevelsChanged: _audioVisualizer.RefreshAllSliderLevels),
             () => _mixerSnapshot.SyncSnapshotAsync(applyVolumes: false));
+        _muteMixToggle = new MuteMixToggleCoordinator(
+            _apiClient,
+            _mixerRegistry,
+            () => _mixerSnapshot.IsUpdatingFromApi,
+            text => StatusText.Text = text,
+            settings => _mixerSnapshot.ApplyChannelSettingsToUi(settings, onLevelsChanged: _audioVisualizer.RefreshAllSliderLevels),
+            () => _mixerSnapshot.SyncSnapshotAsync(applyVolumes: false),
+            _audioVisualizer.RefreshAllSliderLevels);
 
         RegisterMixerChannels();
         ShowMixerView(instant: true);
@@ -585,106 +594,22 @@ public partial class MainWindow : Window
 
     private async void MuteToggle_Click(object sender, RoutedEventArgs e)
     {
-        if (_mixerSnapshot.IsUpdatingFromApi || sender is not ToggleButton muteToggle)
+        if (sender is not ToggleButton muteToggle)
         {
             return;
         }
 
-        if (!_mixerRegistry.MuteBindings.TryGetValue(muteToggle, out var binding))
-        {
-            return;
-        }
-
-        var muted = muteToggle.IsChecked == true;
-        var linkedSlider = _mixerRegistry.FindSliderForMuteToggle(muteToggle);
-        if (linkedSlider is not null)
-        {
-            _mixerRegistry.UpdateSliderVisual(linkedSlider);
-        }
-
-        try
-        {
-            var updatedSettings = await _apiClient.SetMuteAsync(binding.Channel, muted, binding.Path).ConfigureAwait(true);
-            if (updatedSettings is null)
-            {
-                muteToggle.IsChecked = !muted;
-                if (linkedSlider is not null)
-                {
-                    _mixerRegistry.UpdateSliderVisual(linkedSlider);
-                }
-
-                StatusText.Text = "Failed to update mute";
-                return;
-            }
-
-            _mixerSnapshot.ApplyChannelSettingsToUi(updatedSettings, onLevelsChanged: _audioVisualizer.RefreshAllSliderLevels);
-            await _mixerSnapshot.SyncSnapshotAsync(applyVolumes: false).ConfigureAwait(true);
-        }
-        catch (Exception)
-        {
-            muteToggle.IsChecked = !muted;
-            if (linkedSlider is not null)
-            {
-                _mixerRegistry.UpdateSliderVisual(linkedSlider);
-            }
-
-            StatusText.Text = "Failed to update mute";
-        }
+        await _muteMixToggle.ToggleMuteAsync(muteToggle).ConfigureAwait(true);
     }
 
     private async void MixToggle_Click(object sender, RoutedEventArgs e)
     {
-        if (_mixerSnapshot.IsUpdatingFromApi || sender is not ToggleButton mixToggle)
+        if (sender is not ToggleButton mixToggle)
         {
             return;
         }
 
-        if (!_mixerRegistry.MixBindings.TryGetValue(mixToggle, out var binding))
-        {
-            return;
-        }
-
-        var included = mixToggle.IsChecked == true;
-        var linkedSlider = _mixerRegistry.FindSliderForMixToggle(mixToggle);
-        if (linkedSlider is not null)
-        {
-            _mixerRegistry.UpdateSliderVisual(linkedSlider);
-            _audioVisualizer.RefreshAllSliderLevels();
-        }
-
-        try
-        {
-            var updatedSettings = await _apiClient
-                .SetMixIncludedAsync(binding.Channel, included, binding.Path)
-                .ConfigureAwait(true);
-
-            if (updatedSettings is null)
-            {
-                mixToggle.IsChecked = !included;
-                if (linkedSlider is not null)
-                {
-                    _mixerRegistry.UpdateSliderVisual(linkedSlider);
-                    _audioVisualizer.RefreshAllSliderLevels();
-                }
-
-                StatusText.Text = "Failed to update mix routing";
-                return;
-            }
-
-            _mixerSnapshot.ApplyChannelSettingsToUi(updatedSettings, onLevelsChanged: _audioVisualizer.RefreshAllSliderLevels);
-            await _mixerSnapshot.SyncSnapshotAsync(applyVolumes: false).ConfigureAwait(true);
-        }
-        catch (Exception)
-        {
-            mixToggle.IsChecked = !included;
-            if (linkedSlider is not null)
-            {
-                _mixerRegistry.UpdateSliderVisual(linkedSlider);
-                _audioVisualizer.RefreshAllSliderLevels();
-            }
-
-            StatusText.Text = "Failed to update mix routing";
-        }
+        await _muteMixToggle.ToggleMixAsync(mixToggle).ConfigureAwait(true);
     }
 
     private void OpenSettingsButton_Click(object sender, RoutedEventArgs e) => _ = ShowSettingsViewAsync();
