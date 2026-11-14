@@ -22,7 +22,10 @@ public partial class MainWindow : Window
     private const double VolumeClickJumpThreshold = 2.0;
     private const int LevelPollIntervalMs = 33;
     private const int SettingsSyncIntervalMs = 1000;
-    private const int BackgroundSyncIntervalMs = 5000;
+    // Background snapshot refresh only warms the cache for instant first paint when the
+    // mixer is opened; ShowInstantlyAsync always fetches a fresh snapshot anyway. A slower
+    // cadence keeps idle GC pressure low for a tray app that sits hidden most of the time.
+    private const int BackgroundSyncIntervalMs = 30000;
 
     private bool _isShowingSettings;
     private bool _isSlideAnimating;
@@ -381,6 +384,8 @@ public partial class MainWindow : Window
         _isVisibleForUser = false;
         _suppressDeactivateHide = false;
         _audioVisualizer.ResetLevelMeters();
+        // Release WASAPI device handles while hidden; the next show re-enumerates on demand.
+        _audioVisualizer.Suspend();
         ShowMixerView(instant: true);
         _overlayLayout.ReleaseOverlayHeight();
         _overlayAnimation.SetHiddenPose(_anchorLeft, _anchorTop);
