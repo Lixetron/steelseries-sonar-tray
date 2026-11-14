@@ -10,6 +10,11 @@ How to read this: each release lists **user-visible** changes. Download builds f
 
 ## [Unreleased]
 
+### Added
+
+- **Multi-language UI**: English and Russian, switchable under **Settings → Appearance → Language** (or automatic from the Windows display language). Language changes apply immediately.
+- JSON language packs make additional translations drop-in: put `Languages\<code>.json` beside `SonarQuickMixer.exe`.
+
 ## [1.2.0] - 2026-08-27
 
 ### Added

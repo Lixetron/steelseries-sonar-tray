@@ -12,6 +12,13 @@ public sealed class MidiDeviceLayout
     public string? Hint { get; set; }
 
     /// <summary>
+    /// Optional localization token for <see cref="Hint"/> (e.g. <c>midi.preset.smcHint</c>).
+    /// Falls back to the raw <see cref="Hint"/> when the token is missing.
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? HintKey { get; set; }
+
+    /// <summary>
     /// Canvas extent metadata derived from root areas/controls (<see cref="MidiLayoutTreeOps.SyncRootGridExtent"/>).
     /// </summary>
     public int Columns { get; set; } = 4;

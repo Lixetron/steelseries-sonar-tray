@@ -1,3 +1,4 @@
+using SonarQuickMixer.Localization;
 using SonarQuickMixer.Sonar;
 
 namespace SonarQuickMixer.Midi;
@@ -61,29 +62,29 @@ public partial class MidiConfigController
 
         SetBindingDraftDirty(_bindingDrafts.Count > 0);
         RefreshControlUnsavedIndicators(control.Id);
-        StatusText = _hasUnsavedBindingDrafts || _hasUnsavedLayoutChanges
-            ? $"Staged {control.Label} — assign the rest, then Save changes."
-            : $"{control.Label} matches the saved mapping.";
+        SetStatus(_hasUnsavedBindingDrafts || _hasUnsavedLayoutChanges
+            ? Loc.Text("midi.status.staged", control.Label)
+            : Loc.Text("midi.status.matchesSaved", control.Label));
     }
 
     public async Task<bool> SaveBindingDraftsAsync()
     {
         if (!CanEditBindings)
         {
-            StatusText = "Enable the device to save assignments.";
+            SetStatus("midi.status.enableDeviceToSave");
             return false;
         }
 
         if (_bindingDrafts.Count == 0 && !_hasUnsavedLayoutChanges)
         {
-            StatusText = "Nothing to save.";
+            SetStatus("midi.status.nothingToSave");
             return true;
         }
 
         var deviceName = SelectedDeviceName;
         if (string.IsNullOrWhiteSpace(deviceName))
         {
-            StatusText = "Select a device first.";
+            SetStatus("midi.status.selectDeviceFirst");
             return false;
         }
 
@@ -131,7 +132,7 @@ public partial class MidiConfigController
                 var confirmed = await ConfirmConflictAsync(conflicts).ConfigureAwait(true);
                 if (!confirmed)
                 {
-                    StatusText = "Save cancelled — conflict not confirmed.";
+                    SetStatus("midi.status.saveCancelledConflict");
                     return false;
                 }
             }
@@ -161,18 +162,18 @@ public partial class MidiConfigController
 
         if (skipped > 0 && saved == 0 && !layoutSaved)
         {
-            StatusText = "Could not save — discover hardware for those controls first (or open Edit layout → Learn).";
+            SetStatus("midi.status.saveNeedsHardware");
             return false;
         }
 
-        StatusText = (saved, skipped, layoutSaved) switch
+        SetStatus((saved, skipped, layoutSaved) switch
         {
-            (0, _, true) => "Saved layout preset (LED feedback).",
-            (_, > 0, true) => $"Saved {saved} assignment(s) + layout; skipped {skipped} without hardware.",
-            (_, > 0, false) => $"Saved {saved} assignment(s); skipped {skipped} without hardware mapping.",
-            (_, _, true) => $"Saved {saved} assignment(s) and layout preset.",
-            _ => $"Saved {saved} assignment(s)."
-        };
+            (0, _, true) => Loc.Text("midi.status.savedLayoutOnly"),
+            (_, > 0, true) => Loc.Text("midi.status.savedWithLayout", saved, skipped),
+            (_, > 0, false) => Loc.Text("midi.status.savedSkipped", saved, skipped),
+            (_, _, true) => Loc.Text("midi.status.savedWithLayoutPreset", saved),
+            _ => Loc.Text("midi.status.saved", saved)
+        });
         _midi.ClearStagedControlFeedback(deviceName);
         _ = _midi.RefreshHardwareFeedbackAsync(force: true);
         return true;
@@ -191,7 +192,7 @@ public partial class MidiConfigController
         if (reloadLayout)
         {
             ReloadLayoutForSelectedDevice();
-            StatusText = "Discarded unsaved assignments / preset edits.";
+            SetStatus("midi.status.discarded");
             _ = _midi.RefreshHardwareFeedbackAsync(force: true);
         }
     }
@@ -235,7 +236,7 @@ public partial class MidiConfigController
 
         ResetControlVm(control);
         RefreshControlUnsavedIndicators(control.Id);
-        StatusText = $"Reset {control.Label}: recognition and channel cleared.";
+        SetStatus(Loc.Text("midi.status.bindingReset", control.Label));
     }
 
     /// <summary>
@@ -246,7 +247,7 @@ public partial class MidiConfigController
     {
         if (string.IsNullOrWhiteSpace(SelectedDeviceName))
         {
-            StatusText = "Select a device first.";
+            SetStatus("midi.status.selectDeviceFirst");
             return 0;
         }
 
@@ -268,16 +269,15 @@ public partial class MidiConfigController
 
         if (removed == 0 && seeded == 0)
         {
-            StatusText = $"No bindings to clear on {deviceName}.";
+            SetStatus(Loc.Text("midi.status.noBindingsToClear", deviceName));
         }
         else if (seeded > 0)
         {
-            StatusText =
-                $"Cleared {removed} binding(s) on {deviceName}, restored {seeded} factory mapping(s). Assign Sonar channels when ready.";
+            SetStatus(Loc.Text("midi.status.bindingsClearedSeeded", removed, deviceName, seeded));
         }
         else
         {
-            StatusText = $"Cleared {removed} binding(s) on {deviceName}. Move controls to discover them again.";
+            SetStatus(Loc.Text("midi.status.bindingsCleared", removed, deviceName));
         }
 
         return removed;

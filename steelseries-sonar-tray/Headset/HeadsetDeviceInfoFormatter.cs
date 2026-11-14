@@ -1,3 +1,4 @@
+using SonarQuickMixer.Localization;
 using SonarQuickMixer.Settings;
 
 namespace SonarQuickMixer.Headset;
@@ -26,12 +27,21 @@ public static class HeadsetDeviceInfoFormatter
             if (!(info.IsHeadsetPowered == false &&
                   string.Equals(info.ConnectionMethod, "Disconnected", StringComparison.OrdinalIgnoreCase)))
             {
-                parts.Add(info.ConnectionMethod);
+                parts.Add(LocalizeConnection(info.ConnectionMethod));
             }
         }
 
         return parts.Count == 0 ? null : string.Join(" · ", parts);
     }
+
+    private static string LocalizeConnection(string connection) => connection.ToLowerInvariant() switch
+    {
+        "bluetooth" => Loc.Get("headset.connection.bluetooth"),
+        "2.4 ghz" => Loc.Get("headset.connection.2_4ghz"),
+        "usb" => Loc.Get("headset.connection.usb"),
+        "disconnected" => Loc.Get("headset.connection.disconnected"),
+        _ => connection
+    };
 
     public static string? FormatBatteryPercentText(HeadsetDeviceInfo? info, AppSettings settings)
     {
@@ -42,7 +52,7 @@ public static class HeadsetDeviceInfoFormatter
 
         if (info.IsHeadsetPowered == false)
         {
-            return "Off";
+            return Loc.Get("headset.battery.off");
         }
 
         if (info.BatteryPercent is int percent)

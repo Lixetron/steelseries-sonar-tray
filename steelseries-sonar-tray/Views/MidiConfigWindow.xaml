@@ -3,7 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:midi="clr-namespace:SonarQuickMixer.Midi"
         xmlns:controls="clr-namespace:SonarQuickMixer.Controls"
-        Title="MIDI Setup — Sonar Quick Mixer"
+        xmlns:loc="clr-namespace:SonarQuickMixer.Localization"
+        Title="{loc:Tr midi.title}"
         Width="1180"
         Height="820"
         MinWidth="960"
@@ -26,7 +27,6 @@
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="Content" Value="×"/>
             <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="ToolTip" Value="Remove selected"/>
             <Setter Property="Tag" Value="BlueprintDelete"/>
             <Setter Property="Focusable" Value="False"/>
             <Setter Property="Background" Value="#CC8B1A1A"/>
@@ -153,6 +153,7 @@
                            RadiusY="10"
                            Visibility="{Binding ShowDashedEditorOutline, Converter={StaticResource BoolToVis}}"/>
                 <Button Style="{StaticResource BlueprintDeleteButtonStyle}"
+                        ToolTip="{loc:Tr midi.blueprint.removeSelected}"
                         Panel.ZIndex="40"
                         Visibility="{Binding ShowDeleteButton, Converter={StaticResource BoolToVis}}"
                         Click="BlueprintDeleteButton_Click"/>
@@ -395,6 +396,7 @@
                 </Grid>
             </Border>
             <Button Style="{StaticResource BlueprintDeleteButtonStyle}"
+                    ToolTip="{loc:Tr midi.blueprint.removeSelected}"
                     Panel.ZIndex="40"
                     Visibility="{Binding ShowDeleteButton, Converter={StaticResource BoolToVis}}"
                     Click="BlueprintDeleteButton_Click"/>
@@ -406,7 +408,7 @@
                     VerticalAlignment="Top"
                     CornerRadius="7"
                     Background="#F5C518"
-                    ToolTip="No hardware MIDI mapped — select the control and Learn"
+                    ToolTip="{loc:Tr midi.blueprint.missingHardwareTooltip}"
                     IsHitTestVisible="False"
                     Visibility="{Binding ShowMissingHardwareWarning, Converter={StaticResource BoolToVis}}">
                 <TextBlock Text="!"
@@ -438,22 +440,22 @@
                 Margin="0,0,12,0">
             <DockPanel>
                 <TextBlock DockPanel.Dock="Top"
-                           Text="MIDI Devices"
+                           Text="{loc:Tr midi.devices.title}"
                            FontSize="13"
                            FontWeight="SemiBold"
                            Margin="0,0,0,4"/>
                 <TextBlock DockPanel.Dock="Top"
-                           Text="Gray = not used. Duplicates like MIDIIN2 are hidden automatically."
+                           Text="{loc:Tr midi.devices.hint}"
                            FontSize="10"
                            Foreground="{StaticResource TextSecondaryBrush}"
                            TextWrapping="Wrap"
                            Margin="0,0,0,8"/>
                 <CheckBox DockPanel.Dock="Top"
-                          Content="Show hidden / duplicates"
+                          Content="{loc:Tr midi.devices.showHidden}"
                           Style="{StaticResource FluentToggleStyle}"
                           IsChecked="{Binding ShowHiddenDevices, Mode=TwoWay}"
                           Margin="0,0,0,10"
-                          ToolTip="Show ports that were auto-hidden (e.g. MIDIIN2) or manually hidden"/>
+                          ToolTip="{loc:Tr midi.devices.showHiddenTooltip}"/>
 
                 <ListBox x:Name="DevicesList"
                          ItemsSource="{Binding Devices}"
@@ -463,9 +465,9 @@
                          ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                     <ListBox.ContextMenu>
                         <ContextMenu>
-                            <MenuItem Header="Hide this port"
+                            <MenuItem Header="{loc:Tr midi.devices.hideThisPort}"
                                       Click="HideDeviceMenuItem_Click"/>
-                            <MenuItem Header="Show this port"
+                            <MenuItem Header="{loc:Tr midi.devices.showThisPort}"
                                       Click="RevealDeviceMenuItem_Click"/>
                         </ContextMenu>
                     </ListBox.ContextMenu>
@@ -516,31 +518,31 @@
                                 HorizontalAlignment="Stretch"
                                 IsEnabled="{Binding HasSelectedDevice}"
                                 Click="UseDeviceButton_Click"/>
-                        <Button Content="Edit layout"
+                        <Button Content="{loc:Tr midi.editLayout}"
                                 Style="{StaticResource FluentButtonStyle}"
                                 Margin="0,8,0,0"
                                 HorizontalAlignment="Stretch"
                                 IsEnabled="{Binding HasSelectedDevice}"
-                                ToolTip="Open the layout constructor to add/move/remove controls on the grid"
+                                ToolTip="{loc:Tr midi.editLayoutTooltip}"
                                 Click="EditLayoutButton_Click"
                                 Visibility="{Binding IsLayoutConstructorMode, Converter={StaticResource InverseBoolToVis}}"/>
-                        <Button Content="Reset all bindings"
+                        <Button Content="{loc:Tr midi.resetAllBindings}"
                                 Style="{StaticResource FluentDangerButtonStyle}"
                                 Margin="0,8,0,0"
                                 HorizontalAlignment="Stretch"
                                 IsEnabled="{Binding HasSelectedDevice}"
-                                ToolTip="Clear this device's hardware mappings and Sonar assignments, then restore the factory map"
+                                ToolTip="{loc:Tr midi.resetAllBindingsTooltip}"
                                 Click="ResetAllBindingsButton_Click"
                                 Visibility="{Binding IsLayoutConstructorMode, Converter={StaticResource InverseBoolToVis}}"/>
                     </StackPanel>
                     <StackPanel>
                         <DockPanel>
-                            <TextBlock Text="{Binding LayoutName}"
+                            <TextBlock Text="{Binding LayoutDisplayName}"
                                        FontSize="16"
                                        FontWeight="SemiBold"
                                        VerticalAlignment="Center"/>
                             <TextBlock DockPanel.Dock="Right"
-                                       Text="Select device → Use device → assign channels → Save changes"
+                                       Text="{loc:Tr midi.workflowHint}"
                                        Foreground="{StaticResource TextSecondaryBrush}"
                                        FontSize="11"
                                        VerticalAlignment="Center"
@@ -564,7 +566,7 @@
                         IsEnabled="{Binding HasSelectedDevice}">
                     <DockPanel LastChildFill="True">
                         <TextBlock DockPanel.Dock="Left"
-                                   Text="Layout preset"
+                                   Text="{loc:Tr midi.layoutPreset}"
                                    FontSize="11"
                                    FontWeight="SemiBold"
                                    VerticalAlignment="Center"
@@ -573,31 +575,31 @@
                                     Orientation="Horizontal"
                                     VerticalAlignment="Center"
                                     Margin="10,0,0,0">
-                            <Button Content="Save as…"
+                            <Button Content="{loc:Tr midi.preset.saveAs}"
                                     Style="{StaticResource FluentButtonStyle}"
                                     Margin="0,0,6,0"
-                                    ToolTip="Save the current layout as a new named user preset"
+                                    ToolTip="{loc:Tr midi.preset.saveAsTooltip}"
                                     Click="SavePresetAsButton_Click"/>
-                            <Button Content="Rename…"
+                            <Button Content="{loc:Tr midi.preset.rename}"
                                     Style="{StaticResource FluentButtonStyle}"
                                     Margin="0,0,6,0"
                                     IsEnabled="{Binding CanRenameSelectedLayoutPreset}"
-                                    ToolTip="Rename the selected user preset (same file). Official presets are read-only — use Save as… first."
+                                    ToolTip="{loc:Tr midi.preset.renameTooltip}"
                                     Click="RenamePresetButton_Click"/>
-                            <Button Content="Export…"
+                            <Button Content="{loc:Tr midi.preset.export}"
                                     Style="{StaticResource FluentButtonStyle}"
                                     Margin="0,0,6,0"
-                                    ToolTip="Export the current layout JSON"
+                                    ToolTip="{loc:Tr midi.preset.exportTooltip}"
                                     Click="ExportLayoutButton_Click"/>
-                            <Button Content="Import…"
+                            <Button Content="{loc:Tr midi.preset.import}"
                                     Style="{StaticResource FluentButtonStyle}"
                                     Margin="0,0,6,0"
-                                    ToolTip="Import a layout JSON as a new user preset"
+                                    ToolTip="{loc:Tr midi.preset.importTooltip}"
                                     Click="ImportLayoutButton_Click"/>
-                            <Button Content="Delete"
+                            <Button Content="{loc:Tr midi.preset.delete}"
                                     Style="{StaticResource FluentDangerButtonStyle}"
                                     IsEnabled="{Binding CanDeleteSelectedLayoutPreset}"
-                                    ToolTip="Delete the selected user layout JSON file"
+                                    ToolTip="{loc:Tr midi.preset.deleteTooltip}"
                                     Click="DeleteUserPreset_Click"
                                     Visibility="{Binding IsLayoutConstructorMode, Converter={StaticResource InverseBoolToVis}}"/>
                         </StackPanel>
@@ -606,7 +608,7 @@
                                   DisplayMemberPath="DisplayName"
                                   Style="{StaticResource FluentComboBoxStyle}"
                                   VerticalAlignment="Center"
-                                  ToolTip="Official and user layouts for this device"/>
+                                  ToolTip="{loc:Tr midi.preset.comboTooltip}"/>
                     </DockPanel>
                 </Border>
 
@@ -687,7 +689,7 @@
                                 FontSize="16"
                                 FontWeight="SemiBold"
                                 Style="{StaticResource FluentButtonStyle}"
-                                ToolTip="Zoom out (Ctrl+scroll)"
+                                ToolTip="{loc:Tr midi.zoom.out}"
                                 IsEnabled="{Binding CanZoomBlueprintOut}"
                                 Click="BlueprintZoomOut_Click"/>
                         <Button Content="{Binding BlueprintZoomPercent}"
@@ -697,7 +699,7 @@
                                 Padding="6,0"
                                 FontSize="11"
                                 Style="{StaticResource FluentButtonStyle}"
-                                ToolTip="Reset zoom to 100%"
+                                ToolTip="{loc:Tr midi.zoom.reset}"
                                 Click="BlueprintZoomReset_Click"/>
                         <Button Content="+"
                                 Width="28"
@@ -706,7 +708,7 @@
                                 FontSize="16"
                                 FontWeight="SemiBold"
                                 Style="{StaticResource FluentButtonStyle}"
-                                ToolTip="Zoom in (Ctrl+scroll)"
+                                ToolTip="{loc:Tr midi.zoom.in}"
                                 IsEnabled="{Binding CanZoomBlueprintIn}"
                                 Click="BlueprintZoomIn_Click"/>
                     </StackPanel>
@@ -736,7 +738,7 @@
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,8,0">
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                            <TextBlock Text="Channel"
+                            <TextBlock Text="{loc:Tr midi.inspector.channel}"
                                        FontSize="11"
                                        Foreground="{StaticResource TextSecondaryBrush}"/>
                             <TextBlock Text="*"
@@ -744,14 +746,14 @@
                                        FontWeight="Bold"
                                        Foreground="#FFE04A"
                                        Margin="3,0,0,0"
-                                       ToolTip="Unsaved channel change"
+                                       ToolTip="{loc:Tr midi.inspector.unsavedChannel}"
                                        Visibility="{Binding InspectorChannelDirty, Converter={StaticResource BoolToVis}}"/>
                         </StackPanel>
                         <ComboBox x:Name="ChannelCombo" Style="{StaticResource FluentComboBoxStyle}"/>
                     </StackPanel>
                     <StackPanel Grid.Row="0" Grid.Column="1" Margin="0,0,8,0">
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                            <TextBlock Text="Mode"
+                            <TextBlock Text="{loc:Tr midi.inspector.mode}"
                                        FontSize="11"
                                        Foreground="{StaticResource TextSecondaryBrush}"/>
                             <TextBlock Text="*"
@@ -759,17 +761,17 @@
                                        FontWeight="Bold"
                                        Foreground="#FFE04A"
                                        Margin="3,0,0,0"
-                                       ToolTip="Unsaved mode change"
+                                       ToolTip="{loc:Tr midi.inspector.unsavedMode}"
                                        Visibility="{Binding InspectorModeDirty, Converter={StaticResource BoolToVis}}"/>
                         </StackPanel>
                         <ComboBox x:Name="ModeCombo" Style="{StaticResource FluentComboBoxStyle}">
-                            <ComboBoxItem Content="Absolute (0–127 position)" Tag="Absolute"/>
-                            <ComboBoxItem Content="Relative (delta ticks)" Tag="Relative"/>
+                            <ComboBoxItem Content="{loc:Tr midi.mode.absolute}" Tag="Absolute"/>
+                            <ComboBoxItem Content="{loc:Tr midi.mode.relative}" Tag="Relative"/>
                         </ComboBox>
                     </StackPanel>
                     <StackPanel Grid.Row="0" Grid.Column="2" Margin="0,0,8,0">
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                            <TextBlock Text="Action"
+                            <TextBlock Text="{loc:Tr midi.inspector.action}"
                                        FontSize="11"
                                        Foreground="{StaticResource TextSecondaryBrush}"/>
                             <TextBlock Text="*"
@@ -777,28 +779,28 @@
                                        FontWeight="Bold"
                                        Foreground="#FFE04A"
                                        Margin="3,0,0,0"
-                                       ToolTip="Unsaved action change"
+                                       ToolTip="{loc:Tr midi.inspector.unsavedAction}"
                                        Visibility="{Binding InspectorActionDirty, Converter={StaticResource BoolToVis}}"/>
                         </StackPanel>
                         <ComboBox x:Name="ActionCombo" Style="{StaticResource FluentComboBoxStyle}"
-                                  ToolTip="Faders/encoders: None or Volume. Buttons: None or Mute toggle."/>
+                                  ToolTip="{loc:Tr midi.actionTooltip}"/>
                     </StackPanel>
                     <StackPanel Grid.Row="0" Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Bottom">
-                        <Button Content="Save changes"
+                        <Button Content="{loc:Tr common.saveChanges}"
                                 Style="{StaticResource FluentAccentButtonStyle}"
                                 Margin="0,0,8,0"
                                 IsEnabled="{Binding CanSaveBindingDrafts}"
-                                ToolTip="Persist staged channel / mode / action assignments and LED feedback into the active preset"
+                                ToolTip="{loc:Tr midi.saveChangesTooltip}"
                                 Click="SaveBindingDraftsButton_Click"/>
-                        <Button Content="Discard"
+                        <Button Content="{loc:Tr common.discard}"
                                 Style="{StaticResource FluentButtonStyle}"
                                 Margin="0,0,8,0"
                                 IsEnabled="{Binding HasUnsavedBindingDrafts}"
-                                ToolTip="Revert staged assignments and LED feedback to the last saved preset"
+                                ToolTip="{loc:Tr midi.discardTooltip}"
                                 Click="DiscardBindingDraftsButton_Click"/>
-                        <Button Content="Reset binding"
+                        <Button Content="{loc:Tr midi.resetBinding}"
                                 Style="{StaticResource FluentDangerButtonStyle}"
-                                ToolTip="Clear hardware recognition and Sonar assignment (saved immediately)"
+                                ToolTip="{loc:Tr midi.resetBindingTooltip}"
                                 Click="ClearBindingButton_Click"/>
                     </StackPanel>
                     <StackPanel Grid.Row="1"
@@ -806,11 +808,11 @@
                                 Grid.ColumnSpan="2"
                                 Margin="0,12,8,0"
                                 x:Name="FeedbackPanelPanel">
-                        <TextBlock Text="LED feedback"
+                        <TextBlock Text="{loc:Tr midi.feedback.title}"
                                    FontSize="11"
                                    Foreground="{StaticResource TextSecondaryBrush}"
                                    Margin="0,0,0,4"
-                                   ToolTip="Host→device lamp. Source = when it lights. Style = solid or blink (pads/encoders only). Faders: Off or Channel assigned (soft-takeover; hardware blinks while Sonar ≠ physical fader). Staged until Save changes."/>
+                                   ToolTip="{loc:Tr midi.feedback.tooltip}"/>
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
@@ -822,7 +824,7 @@
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
                             <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" Margin="0,0,0,4">
-                                <TextBlock Text="Source"
+                                <TextBlock Text="{loc:Tr midi.feedback.source}"
                                            FontSize="11"
                                            Foreground="{StaticResource TextSecondaryBrush}"/>
                                 <TextBlock Text="*"
@@ -830,11 +832,11 @@
                                            FontWeight="Bold"
                                            Foreground="#FFE04A"
                                            Margin="3,0,0,0"
-                                           ToolTip="Unsaved LED source change"
+                                           ToolTip="{loc:Tr midi.feedback.unsavedSource}"
                                            Visibility="{Binding InspectorFeedbackSourceDirty, Converter={StaticResource BoolToVis}}"/>
                             </StackPanel>
                             <StackPanel Grid.Row="0" Grid.Column="2" Orientation="Horizontal" Margin="0,0,0,4">
-                                <TextBlock Text="Style"
+                                <TextBlock Text="{loc:Tr midi.feedback.style}"
                                            FontSize="11"
                                            Foreground="{StaticResource TextSecondaryBrush}"/>
                                 <TextBlock Text="*"
@@ -842,23 +844,23 @@
                                            FontWeight="Bold"
                                            Foreground="#FFE04A"
                                            Margin="3,0,0,0"
-                                           ToolTip="Unsaved LED style change"
+                                           ToolTip="{loc:Tr midi.feedback.unsavedStyle}"
                                            Visibility="{Binding InspectorFeedbackStyleDirty, Converter={StaticResource BoolToVis}}"/>
                             </StackPanel>
                             <ComboBox x:Name="FeedbackSourceCombo"
                                       Grid.Row="1"
                                       Grid.Column="0"
                                       Style="{StaticResource FluentComboBoxStyle}"
-                                      ToolTip="When the lamp reacts (staged — Save changes to apply)."
+                                      ToolTip="{loc:Tr midi.feedback.sourceTooltip}"
                                       SelectionChanged="FeedbackSourceCombo_SelectionChanged"/>
                             <ComboBox x:Name="FeedbackStyleCombo"
                                       Grid.Row="1"
                                       Grid.Column="2"
                                       Style="{StaticResource FluentComboBoxStyle}"
-                                      ToolTip="Solid or blink while the source condition is active (pads/encoders)."
+                                      ToolTip="{loc:Tr midi.feedback.styleTooltip}"
                                       SelectionChanged="FeedbackStyleCombo_SelectionChanged">
-                                <ComboBoxItem Content="Solid" Tag="Solid"/>
-                                <ComboBoxItem Content="Blink" Tag="Blink"/>
+                                <ComboBoxItem Content="{loc:Tr midi.feedback.style.solid}" Tag="Solid"/>
+                                <ComboBoxItem Content="{loc:Tr midi.feedback.style.blink}" Tag="Blink"/>
                             </ComboBox>
                         </Grid>
                     </StackPanel>
@@ -881,7 +883,7 @@
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Grid.Column="0" Margin="0,0,12,0">
-                        <TextBlock Text="Palette — drop onto areas (edge = beside, center = inside)"
+                        <TextBlock Text="{loc:Tr midi.palette.title}"
                                    FontSize="11"
                                    Foreground="{StaticResource TextSecondaryBrush}"
                                    Margin="0,0,0,8"/>
@@ -894,10 +896,10 @@
                                     BorderThickness="1"
                                     Cursor="Hand"
                                     Tag="Area"
-                                    ToolTip="Nestable area / group"
+                                    ToolTip="{loc:Tr midi.palette.areaTooltip}"
                                     PreviewMouseLeftButtonDown="PaletteItem_PreviewMouseLeftButtonDown"
                                     MouseLeftButtonUp="PaletteItem_Click">
-                                <TextBlock Text="Area" FontWeight="SemiBold"/>
+                                <TextBlock Text="{loc:Tr midi.palette.area}" FontWeight="SemiBold"/>
                             </Border>
                             <Border Margin="0,0,8,0"
                                     Padding="10,8"
@@ -907,10 +909,10 @@
                                     BorderThickness="1"
                                     Cursor="Hand"
                                     Tag="Encoder"
-                                    ToolTip="Endless / relative knob"
+                                    ToolTip="{loc:Tr midi.palette.encoderTooltip}"
                                     PreviewMouseLeftButtonDown="PaletteItem_PreviewMouseLeftButtonDown"
                                     MouseLeftButtonUp="PaletteItem_Click">
-                                <TextBlock Text="Encoder" FontWeight="SemiBold"/>
+                                <TextBlock Text="{loc:Tr midi.palette.encoder}" FontWeight="SemiBold"/>
                             </Border>
                             <Border Margin="0,0,8,0"
                                     Padding="10,8"
@@ -920,10 +922,10 @@
                                     BorderThickness="1"
                                     Cursor="Hand"
                                     Tag="Fader"
-                                    ToolTip="Absolute fader"
+                                    ToolTip="{loc:Tr midi.palette.faderTooltip}"
                                     PreviewMouseLeftButtonDown="PaletteItem_PreviewMouseLeftButtonDown"
                                     MouseLeftButtonUp="PaletteItem_Click">
-                                <TextBlock Text="Fader" FontWeight="SemiBold"/>
+                                <TextBlock Text="{loc:Tr midi.palette.fader}" FontWeight="SemiBold"/>
                             </Border>
                             <Border Padding="10,8"
                                     CornerRadius="8"
@@ -932,34 +934,34 @@
                                     BorderThickness="1"
                                     Cursor="Hand"
                                     Tag="Button"
-                                    ToolTip="Button / note"
+                                    ToolTip="{loc:Tr midi.palette.buttonTooltip}"
                                     PreviewMouseLeftButtonDown="PaletteItem_PreviewMouseLeftButtonDown"
                                     MouseLeftButtonUp="PaletteItem_Click">
-                                <TextBlock Text="Button" FontWeight="SemiBold"/>
+                                <TextBlock Text="{loc:Tr midi.palette.button}" FontWeight="SemiBold"/>
                             </Border>
                         </StackPanel>
                         <DockPanel Margin="0,10,0,0">
                             <TextBlock DockPanel.Dock="Left"
-                                       Text="Label"
+                                       Text="{loc:Tr midi.palette.label}"
                                        FontSize="11"
                                        VerticalAlignment="Center"
                                        Foreground="{StaticResource TextSecondaryBrush}"
                                        Margin="0,0,8,0"/>
                             <TextBox Text="{Binding DraftControlLabel, UpdateSourceTrigger=PropertyChanged}"
                                      Style="{StaticResource FluentTextBoxStyle}"
-                                     ToolTip="Optional caption for the selected control/area (Enter / focus leave). Empty = no title on areas. Also used for the next palette drop."
+                                     ToolTip="{loc:Tr midi.palette.labelTooltip}"
                                      LostFocus="DraftLabelBox_LostFocus"
                                      KeyDown="DraftLabelBox_KeyDown"/>
                         </DockPanel>
                         <DockPanel Margin="0,8,0,0"
                                    IsEnabled="{Binding DraftFeedbackEnabled}">
                             <TextBlock DockPanel.Dock="Left"
-                                       Text="LED"
+                                       Text="{loc:Tr midi.palette.led}"
                                        FontSize="11"
                                        VerticalAlignment="Center"
                                        Foreground="{StaticResource TextSecondaryBrush}"
                                        Margin="0,0,8,0"
-                                       ToolTip="Host→device lamp. Source + style. Faders: Off or Channel assigned only. Saved with Save layout."/>
+                                       ToolTip="{loc:Tr midi.palette.ledTooltip}"/>
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
@@ -975,18 +977,18 @@
                                           Style="{StaticResource FluentComboBoxStyle}"
                                           IsEnabled="{Binding DraftFeedbackStyleEnabled}"
                                           SelectionChanged="DraftFeedbackStyle_SelectionChanged">
-                                    <ComboBoxItem Content="Solid" Tag="Solid"/>
-                                    <ComboBoxItem Content="Blink" Tag="Blink"/>
+                                    <ComboBoxItem Content="{loc:Tr midi.feedback.style.solid}" Tag="Solid"/>
+                                    <ComboBoxItem Content="{loc:Tr midi.feedback.style.blink}" Tag="Blink"/>
                                 </ComboBox>
                             </Grid>
                         </DockPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                            <TextBlock Text="ColSpan"
+                            <TextBlock Text="{loc:Tr midi.palette.colSpan}"
                                        FontSize="11"
                                        VerticalAlignment="Center"
                                        Foreground="{StaticResource TextSecondaryBrush}"
                                        Margin="0,0,6,0"
-                                       ToolTip="How many columns this control/area occupies in its parent grid"/>
+                                       ToolTip="{loc:Tr midi.palette.colSpanTooltip}"/>
                             <Button Content="−"
                                     Style="{StaticResource FluentButtonStyle}"
                                     Width="32"
@@ -996,7 +998,7 @@
                                      Style="{StaticResource FluentTextBoxStyle}"
                                      Width="40"
                                      TextAlignment="Center"
-                                     ToolTip="Columns spanned (1–16). For a wide fader try 2+."
+                                     ToolTip="{loc:Tr midi.palette.colsSpannedTooltip}"
                                      LostFocus="DraftSpanBox_LostFocus"
                                      KeyDown="DraftSpanBox_KeyDown"/>
                             <Button Content="+"
@@ -1004,12 +1006,12 @@
                                     Width="32"
                                     Margin="4,0,16,0"
                                     Click="DraftColSpanPlus_Click"/>
-                            <TextBlock Text="RowSpan"
+                            <TextBlock Text="{loc:Tr midi.palette.rowSpan}"
                                        FontSize="11"
                                        VerticalAlignment="Center"
                                        Foreground="{StaticResource TextSecondaryBrush}"
                                        Margin="0,0,6,0"
-                                       ToolTip="How many rows this control/area occupies in its parent grid"/>
+                                       ToolTip="{loc:Tr midi.palette.rowSpanTooltip}"/>
                             <Button Content="−"
                                     Style="{StaticResource FluentButtonStyle}"
                                     Width="32"
@@ -1019,7 +1021,7 @@
                                      Style="{StaticResource FluentTextBoxStyle}"
                                      Width="40"
                                      TextAlignment="Center"
-                                     ToolTip="Rows spanned (1–16). Tall faders in the factory map use 4."
+                                     ToolTip="{loc:Tr midi.palette.rowsSpannedTooltip}"
                                      LostFocus="DraftSpanBox_LostFocus"
                                      KeyDown="DraftSpanBox_KeyDown"/>
                             <Button Content="+"
@@ -1028,83 +1030,83 @@
                                     Margin="4,0,0,0"
                                     Click="DraftRowSpanPlus_Click"/>
                         </StackPanel>
-                        <CheckBox Content="Hide border"
+                        <CheckBox Content="{loc:Tr midi.palette.hideBorder}"
                                   Margin="0,10,0,0"
                                   Style="{StaticResource FluentToggleStyle}"
                                   IsChecked="{Binding DraftHideBorder, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                   IsEnabled="{Binding DraftHideBorderEnabled}"
-                                  ToolTip="Area only: no solid outline in normal view. In the constructor a dashed outline still shows so you can edit the zone."
+                                  ToolTip="{loc:Tr midi.palette.hideBorderTooltip}"
                                   Checked="DraftHideBorder_Click"
                                   Unchecked="DraftHideBorder_Click"/>
-                        <CheckBox Content="Keep spacing"
+                        <CheckBox Content="{loc:Tr midi.palette.keepSpacing}"
                                   Margin="0,8,0,0"
                                   Style="{StaticResource FluentToggleStyle}"
                                   IsChecked="{Binding DraftKeepSpacing, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                   IsEnabled="{Binding DraftKeepSpacingEnabled}"
-                                  ToolTip="With Hide border: keep a modest gap around this area (e.g. separate channel strips or the transport row) instead of collapsing nested margins to zero."
+                                  ToolTip="{loc:Tr midi.palette.keepSpacingTooltip}"
                                   Checked="DraftKeepSpacing_Click"
                                   Unchecked="DraftKeepSpacing_Click"/>
                         <DockPanel Margin="0,8,0,0"
                                    IsEnabled="{Binding DraftContentJustifyEnabled}">
                             <TextBlock DockPanel.Dock="Left"
-                                       Text="H"
+                                       Text="{loc:Tr midi.palette.h}"
                                        FontSize="11"
                                        VerticalAlignment="Center"
                                        Foreground="{StaticResource TextSecondaryBrush}"
                                        Margin="0,0,6,0"
-                                       ToolTip="Horizontal justify (flex): how children fill extra width when the area stretches."/>
+                                       ToolTip="{loc:Tr midi.palette.hTooltip}"/>
                             <ComboBox SelectedValue="{Binding DraftContentJustify, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                       SelectedValuePath="Tag"
                                       Style="{StaticResource FluentComboBoxStyle}"
-                                      ToolTip="Pack = together at start. Space between = equal gaps between items. Space evenly = equal gaps including edges."
+                                      ToolTip="{loc:Tr midi.palette.justifyTooltip}"
                                       SelectionChanged="DraftContentJustify_SelectionChanged">
-                                <ComboBoxItem Content="Pack" Tag="{x:Static midi:MidiContentJustify.Pack}"/>
-                                <ComboBoxItem Content="Space between" Tag="{x:Static midi:MidiContentJustify.SpaceBetween}"/>
-                                <ComboBoxItem Content="Space evenly" Tag="{x:Static midi:MidiContentJustify.SpaceEvenly}"/>
+                                <ComboBoxItem Content="{loc:Tr midi.justify.pack}" Tag="{x:Static midi:MidiContentJustify.Pack}"/>
+                                <ComboBoxItem Content="{loc:Tr midi.justify.spaceBetween}" Tag="{x:Static midi:MidiContentJustify.SpaceBetween}"/>
+                                <ComboBoxItem Content="{loc:Tr midi.justify.spaceEvenly}" Tag="{x:Static midi:MidiContentJustify.SpaceEvenly}"/>
                             </ComboBox>
                         </DockPanel>
                         <DockPanel Margin="0,6,0,0"
                                    IsEnabled="{Binding DraftContentJustifyEnabled}">
                             <TextBlock DockPanel.Dock="Left"
-                                       Text="V"
+                                       Text="{loc:Tr midi.palette.v}"
                                        FontSize="11"
                                        VerticalAlignment="Center"
                                        Foreground="{StaticResource TextSecondaryBrush}"
                                        Margin="0,0,6,0"
-                                       ToolTip="Vertical align (flex): how children fill extra height when the area stretches."/>
+                                       ToolTip="{loc:Tr midi.palette.vTooltip}"/>
                             <ComboBox SelectedValue="{Binding DraftContentAlign, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                       SelectedValuePath="Tag"
                                       Style="{StaticResource FluentComboBoxStyle}"
-                                      ToolTip="Pack = together at top. Space between = equal gaps between rows. Space evenly = equal gaps including top/bottom edges."
+                                      ToolTip="{loc:Tr midi.palette.alignTooltip}"
                                       SelectionChanged="DraftContentJustify_SelectionChanged">
-                                <ComboBoxItem Content="Pack" Tag="{x:Static midi:MidiContentJustify.Pack}"/>
-                                <ComboBoxItem Content="Space between" Tag="{x:Static midi:MidiContentJustify.SpaceBetween}"/>
-                                <ComboBoxItem Content="Space evenly" Tag="{x:Static midi:MidiContentJustify.SpaceEvenly}"/>
+                                <ComboBoxItem Content="{loc:Tr midi.justify.pack}" Tag="{x:Static midi:MidiContentJustify.Pack}"/>
+                                <ComboBoxItem Content="{loc:Tr midi.justify.spaceBetween}" Tag="{x:Static midi:MidiContentJustify.SpaceBetween}"/>
+                                <ComboBoxItem Content="{loc:Tr midi.justify.spaceEvenly}" Tag="{x:Static midi:MidiContentJustify.SpaceEvenly}"/>
                             </ComboBox>
                         </DockPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
                             <Button x:Name="LearnButton"
-                                    Content="Learn MIDI"
+                                    Content="{loc:Tr midi.learn}"
                                     Style="{StaticResource FluentAccentButtonStyle}"
                                     Margin="0,0,8,0"
-                                    ToolTip="Map hardware CC/Note/Pitch Bend to the selected control"
+                                    ToolTip="{loc:Tr midi.learnTooltip}"
                                     Click="LearnButton_Click"/>
                             <Button x:Name="CancelLearnButton"
-                                    Content="Cancel Learn"
+                                    Content="{loc:Tr midi.cancelLearn}"
                                     Style="{StaticResource FluentButtonStyle}"
                                     IsEnabled="False"
-                                    ToolTip="Stop listening without changing the binding"
+                                    ToolTip="{loc:Tr midi.cancelLearnTooltip}"
                                     Click="CancelLearnButton_Click"/>
                         </StackPanel>
                     </StackPanel>
 
                     <StackPanel Grid.Column="1" Orientation="Vertical" VerticalAlignment="Bottom">
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                            <Button Content="Cancel"
+                            <Button Content="{loc:Tr midi.layout.cancel}"
                                     Style="{StaticResource FluentButtonStyle}"
                                     Margin="0,0,8,0"
                                     Click="CancelLayoutConstructor_Click"/>
-                            <Button Content="Save layout"
+                            <Button Content="{loc:Tr midi.layout.save}"
                                     Style="{StaticResource FluentAccentButtonStyle}"
                                     Click="SaveLayoutConstructor_Click"/>
                         </StackPanel>
@@ -1128,7 +1130,7 @@
                     VerticalAlignment="Center"
                     HorizontalAlignment="Center">
                 <StackPanel>
-                    <TextBlock Text="Volume fighting risk"
+                    <TextBlock Text="{loc:Tr midi.conflict.title}"
                                FontSize="15"
                                FontWeight="SemiBold"
                                Margin="0,0,0,10"/>
@@ -1136,13 +1138,13 @@
                                TextWrapping="Wrap"
                                Foreground="{StaticResource TextSecondaryBrush}"
                                Margin="0,0,0,16"
-                               Text="Are you sure? Multiple non-motorized faders on one channel will cause volume fighting."/>
+                               Text="{loc:Tr midi.conflict.message}"/>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button Content="Cancel"
+                        <Button Content="{loc:Tr common.cancel}"
                                 Style="{StaticResource FluentButtonStyle}"
                                 Margin="0,0,8,0"
                                 Click="ConflictCancel_Click"/>
-                        <Button Content="Yes, I am sure"
+                        <Button Content="{loc:Tr midi.conflict.confirm}"
                                 Style="{StaticResource FluentAccentButtonStyle}"
                                 Click="ConflictConfirm_Click"/>
                     </StackPanel>

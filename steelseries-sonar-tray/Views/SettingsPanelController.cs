@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using SonarQuickMixer.Localization;
 using SonarQuickMixer.Midi;
 using SonarQuickMixer.Services;
 using SonarQuickMixer.Settings;
@@ -32,11 +33,13 @@ public sealed class SettingsPanelController
     private readonly System.Windows.Controls.ComboBox _mediaKeysOverrideChannelCombo;
     private readonly FrameworkElement _mediaKeysOverrideChannelPanel;
     private readonly System.Windows.Controls.ComboBox _trayIconStyleCombo;
+    private readonly System.Windows.Controls.ComboBox _languageCombo;
     private readonly Action? _onDeviceSelectorVisibilityChanged;
 
     private bool _suppressFeatureToggleChanges;
     private bool _suppressMediaKeysChannelChange;
     private bool _suppressTrayIconStyleChange;
+    private bool _suppressLanguageChange;
 
     public SettingsPanelController(
         AppSettings settings,
@@ -52,6 +55,7 @@ public sealed class SettingsPanelController
         System.Windows.Controls.ComboBox mediaKeysOverrideChannelCombo,
         FrameworkElement mediaKeysOverrideChannelPanel,
         System.Windows.Controls.ComboBox trayIconStyleCombo,
+        System.Windows.Controls.ComboBox languageCombo,
         ToggleButton showDeviceNameToggle,
         ToggleButton showDeviceBatteryToggle,
         ToggleButton showDeviceConnectionToggle,
@@ -81,6 +85,7 @@ public sealed class SettingsPanelController
         _mediaKeysOverrideChannelCombo = mediaKeysOverrideChannelCombo;
         _mediaKeysOverrideChannelPanel = mediaKeysOverrideChannelPanel;
         _trayIconStyleCombo = trayIconStyleCombo;
+        _languageCombo = languageCombo;
         _onDeviceSelectorVisibilityChanged = onDeviceSelectorVisibilityChanged;
     }
 
@@ -118,6 +123,8 @@ public sealed class SettingsPanelController
         SelectMediaKeysOverrideChannel(_settings.MediaKeysOverrideChannel);
         PopulateTrayIconStyleCombo();
         SelectTrayIconStyle(_settings.TrayIconStyle);
+        PopulateLanguageCombo();
+        SelectLanguage(_settings.Language);
         ApplyMediaKeysOverrideSettings();
         ApplyDiscordScreenshareEchoFixSettings();
         ApplyMidiSettings();
@@ -194,6 +201,30 @@ public sealed class SettingsPanelController
         _applyTrayIcon();
     }
 
+    public void OnLanguageChanged()
+    {
+        if (_suppressLanguageChange
+            || _languageCombo.SelectedItem is not System.Windows.Controls.ComboBoxItem { Tag: string preference })
+        {
+            return;
+        }
+
+        _settings.Language = preference;
+        _settings.Save();
+        LocalizationManager.Current.SetLanguage(preference);
+    }
+
+    /// <summary>Rebuilds code-generated item text after a language switch.</summary>
+    public void RefreshLocalization()
+    {
+        PopulateTrayIconStyleCombo();
+        SelectTrayIconStyle(_settings.TrayIconStyle);
+        PopulateMediaKeysOverrideChannelCombo();
+        SelectMediaKeysOverrideChannel(_settings.MediaKeysOverrideChannel);
+        PopulateLanguageCombo();
+        SelectLanguage(_settings.Language);
+    }
+
     public void ApplyMediaKeysOverrideSettings()
     {
         var enabled = _mediaKeysOverrideToggle.IsChecked == true;
@@ -250,11 +281,75 @@ public sealed class SettingsPanelController
     private void PopulateTrayIconStyleCombo()
     {
         _trayIconStyleCombo.Items.Clear();
-        _trayIconStyleCombo.Items.Add(new ComboBoxItem { Content = "Auto (match Windows theme)", Tag = TrayIconStyle.Auto });
-        _trayIconStyleCombo.Items.Add(new ComboBoxItem { Content = "Accent (cyan)", Tag = TrayIconStyle.Accent });
-        _trayIconStyleCombo.Items.Add(new ComboBoxItem { Content = "White", Tag = TrayIconStyle.White });
-        _trayIconStyleCombo.Items.Add(new ComboBoxItem { Content = "Dark", Tag = TrayIconStyle.Dark });
+        _trayIconStyleCombo.Items.Add(new ComboBoxItem { Content = Loc.Get("settings.trayIcon.auto"), Tag = TrayIconStyle.Auto });
+        _trayIconStyleCombo.Items.Add(new ComboBoxItem { Content = Loc.Get("settings.trayIcon.accent"), Tag = TrayIconStyle.Accent });
+        _trayIconStyleCombo.Items.Add(new ComboBoxItem { Content = Loc.Get("settings.trayIcon.white"), Tag = TrayIconStyle.White });
+        _trayIconStyleCombo.Items.Add(new ComboBoxItem { Content = Loc.Get("settings.trayIcon.dark"), Tag = TrayIconStyle.Dark });
     }
+
+    private void PopulateLanguageCombo()
+    {
+        var previous = GetSelectedLanguagePreference();
+
+        _suppressLanguageChange = true;
+        try
+        {
+            _languageCombo.Items.Clear();
+            _languageCombo.Items.Add(new ComboBoxItem
+            {
+                Content = Loc.Get("settings.language.auto"),
+                Tag = LocalizationManager.AutoCode
+            });
+
+            foreach (var language in LocalizationManager.Current.Languages)
+            {
+                _languageCombo.Items.Add(new ComboBoxItem
+                {
+                    Content = language.NativeName,
+                    Tag = language.Code
+                });
+            }
+
+            SelectLanguageCore(previous);
+        }
+        finally
+        {
+            _suppressLanguageChange = false;
+        }
+    }
+
+    private void SelectLanguage(string preference)
+    {
+        _suppressLanguageChange = true;
+        try
+        {
+            SelectLanguageCore(preference);
+        }
+        finally
+        {
+            _suppressLanguageChange = false;
+        }
+    }
+
+    private void SelectLanguageCore(string? preference)
+    {
+        var target = string.IsNullOrWhiteSpace(preference) ? LocalizationManager.AutoCode : preference;
+        foreach (ComboBoxItem item in _languageCombo.Items)
+        {
+            if (string.Equals(item.Tag as string, target, StringComparison.OrdinalIgnoreCase))
+            {
+                _languageCombo.SelectedItem = item;
+                return;
+            }
+        }
+
+        _languageCombo.SelectedIndex = 0;
+    }
+
+    private string? GetSelectedLanguagePreference() =>
+        _languageCombo.SelectedItem is ComboBoxItem { Tag: string preference }
+            ? preference
+            : null;
 
     private void SelectTrayIconStyle(TrayIconStyle style)
     {
@@ -369,7 +464,7 @@ public sealed class UpdateNotificationController
     }
 
     public void InitializeVersionText() =>
-        _settingsVersionText.Text = $"Installed: {AppVersion.Display}";
+        _settingsVersionText.Text = Loc.Format("settings.installed", AppVersion.Display);
 
     public async Task CheckForUpdatesAsync()
     {
@@ -397,22 +492,25 @@ public sealed class UpdateNotificationController
     private void ApplyUpdateCheckResult(UpdateCheckResult? result)
     {
         _updateCheckResult = result;
-        _settingsVersionText.Text = $"Installed: {AppVersion.Display}";
+        _settingsVersionText.Text = Loc.Format("settings.installed", AppVersion.Display);
 
         if (result?.IsUpdateAvailable == true)
         {
             _updateNotificationDot.Visibility = Visibility.Visible;
             _updateAvailablePanel.Visibility = Visibility.Visible;
             _updateAvailableText.Text =
-                $"Version {AppVersion.Format(result.LatestVersion)} is available on GitHub.";
-            _openSettingsButton.ToolTip = "Settings — update available";
+                Loc.Format("settings.updateAvailable", AppVersion.Format(result.LatestVersion));
+            _openSettingsButton.ToolTip = Loc.Get("mixer.tooltip.settingsUpdate");
             _setTrayUpdateAvailable(true);
             return;
         }
 
         _updateNotificationDot.Visibility = Visibility.Collapsed;
         _updateAvailablePanel.Visibility = Visibility.Collapsed;
-        _openSettingsButton.ToolTip = "Settings";
+        _openSettingsButton.ToolTip = Loc.Get("mixer.tooltip.settings");
         _setTrayUpdateAvailable(false);
     }
+
+    /// <summary>Re-renders version / update text after a language switch.</summary>
+    public void RefreshLocalization() => ApplyUpdateCheckResult(_updateCheckResult);
 }

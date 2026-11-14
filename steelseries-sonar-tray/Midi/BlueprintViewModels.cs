@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
+using SonarQuickMixer.Localization;
 using SonarQuickMixer.Sonar;
 using Media = System.Windows.Media;
 
@@ -25,7 +26,7 @@ public sealed class BlueprintControlVm : IBlueprintFormCell
     private bool _isPressed;
     private bool _hasBinding;
     private MidiLayoutDropZone? _dropPreviewZone;
-    private string _bindingSummary = "Unmapped — move control to discover";
+    private bool _isBindingDraft;
     private string _channelId = string.Empty;
     private MidiValueMode _mode = MidiValueMode.Absolute;
     private MidiBindingAction _action = MidiBindingAction.Volume;
@@ -306,18 +307,57 @@ public sealed class BlueprintControlVm : IBlueprintFormCell
         }
     }
 
+    /// <summary>
+    /// Human-readable hardware / channel summary used as the control tooltip.
+    /// Computed from the current VM state so a language switch updates it in place.
+    /// </summary>
     public string BindingSummary
     {
-        get => _bindingSummary;
+        get
+        {
+            if (Controller is int controller)
+            {
+                var hardware = MidiBinding.FormatHardwareLabel(IsNote, controller, IsPitchBend);
+                if (HasSonarChannel)
+                {
+                    var summary = Loc.Format(
+                        "midi.binding.summary",
+                        hardware,
+                        MidiBinding.FormatChannelLabel(ChannelId),
+                        Loc.Get(Mode == MidiValueMode.Relative ? "midi.mode.relativeShort" : "midi.mode.absoluteShort"));
+                    return IsBindingDraft ? summary + Loc.Get("midi.binding.draftSuffix") : summary;
+                }
+
+                var unassigned = Loc.Format("midi.binding.summaryUnassigned", hardware);
+                return IsBindingDraft ? unassigned + Loc.Get("midi.binding.draftSuffix") : unassigned;
+            }
+
+            if (HasSonarChannel)
+            {
+                return Loc.Format(
+                    "midi.binding.summaryDraftNoHardware",
+                    MidiBinding.FormatChannelLabel(ChannelId),
+                    Loc.Get(Mode == MidiValueMode.Relative ? "midi.mode.relativeShort" : "midi.mode.absoluteShort"));
+            }
+
+            return Loc.Get("midi.binding.unmapped");
+        }
+    }
+
+    /// <summary>Assignments staged in the inspector but not written to the preset yet.</summary>
+    public bool IsBindingDraft
+    {
+        get => _isBindingDraft;
         set
         {
-            if (_bindingSummary == value)
+            if (_isBindingDraft == value)
             {
                 return;
             }
 
-            _bindingSummary = value;
+            _isBindingDraft = value;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(BindingSummary));
         }
     }
 
@@ -338,6 +378,7 @@ public sealed class BlueprintControlVm : IBlueprintFormCell
             OnPropertyChanged(nameof(ShowChannelCaption));
             OnPropertyChanged(nameof(IsPassive));
             OnPropertyChanged(nameof(BorderBrush));
+            OnPropertyChanged(nameof(BindingSummary));
         }
     }
 
@@ -373,6 +414,7 @@ public sealed class BlueprintControlVm : IBlueprintFormCell
             OnPropertyChanged();
             OnPropertyChanged(nameof(UsesRelativeNeedle));
             OnPropertyChanged(nameof(NeedleAngle));
+            OnPropertyChanged(nameof(BindingSummary));
         }
     }
 
@@ -419,6 +461,7 @@ public sealed class BlueprintControlVm : IBlueprintFormCell
             _controller = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(ShowMissingHardwareWarning));
+            OnPropertyChanged(nameof(BindingSummary));
         }
     }
 
@@ -439,6 +482,7 @@ public sealed class BlueprintControlVm : IBlueprintFormCell
 
             _isNote = value;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(BindingSummary));
         }
     }
 
@@ -454,7 +498,15 @@ public sealed class BlueprintControlVm : IBlueprintFormCell
 
             _isPitchBend = value;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(BindingSummary));
         }
+    }
+
+    /// <summary>Re-renders localized, computed text (tooltip / channel caption).</summary>
+    public void RefreshLocalization()
+    {
+        OnPropertyChanged(nameof(BindingSummary));
+        OnPropertyChanged(nameof(ChannelCaption));
     }
 
     public Media.Brush BorderBrush
@@ -848,10 +900,14 @@ public sealed class MidiDeviceListItemVm : INotifyPropertyChanged
 
     public string StatusLabel =>
         IsHidden
-            ? "Hidden"
+            ? Loc.Get("midi.devices.status.hidden")
             : IsEnabled
-                ? "In use"
-                : "Not used";
+                ? Loc.Get("midi.devices.status.inUse")
+                : Loc.Get("midi.devices.status.notUsed");
+
+    /// <summary>Re-reads <see cref="StatusLabel"/> after a language switch.</summary>
+    public void RefreshLocalization() =>
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(StatusLabel)));
 
     public Media.Brush NameForeground =>
         IsHidden

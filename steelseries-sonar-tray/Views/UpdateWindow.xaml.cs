@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Windows;
 using Application = System.Windows.Application;
+using SonarQuickMixer.Localization;
 using SonarQuickMixer.Updates;
 
 namespace SonarQuickMixer.Views;
@@ -17,15 +18,22 @@ public partial class UpdateWindow : Window
         _targetVersion = targetVersion;
         _updateService = updateService;
 
-        VersionText.Text = $"v{targetVersion.Major}.{targetVersion.Minor}.{targetVersion.Build} is available";
+        VersionText.Text = BuildVersionText();
 
         // Subscribe to download events
         _updateService.DownloadProgressChanged += UpdateService_DownloadProgressChanged;
         _updateService.DownloadCompleted += UpdateService_DownloadCompleted;
+        Loc.LanguageChanged += OnLanguageChanged;
 
         // Start downloading
         StartDownload();
     }
+
+    private string BuildVersionText() =>
+        Loc.Format("update.versionAvailable", AppVersion.Format(_targetVersion));
+
+    private void OnLanguageChanged(object? sender, EventArgs e) =>
+        Dispatcher.Invoke(() => VersionText.Text = BuildVersionText());
 
     private void StartDownload()
     {
@@ -38,7 +46,7 @@ public partial class UpdateWindow : Window
         Dispatcher.Invoke(() =>
         {
             ProgressBar.Value = e.Percentage;
-            ProgressText.Text = $"{e.Percentage}% • {e.FormatSize()}";
+            ProgressText.Text = Loc.Format("update.progress", e.Percentage, e.FormatSize());
         });
     }
 
@@ -107,6 +115,7 @@ public partial class UpdateWindow : Window
         _downloadCancellation?.Dispose();
         _updateService.DownloadProgressChanged -= UpdateService_DownloadProgressChanged;
         _updateService.DownloadCompleted -= UpdateService_DownloadCompleted;
+        Loc.LanguageChanged -= OnLanguageChanged;
         base.OnClosed(e);
     }
 }

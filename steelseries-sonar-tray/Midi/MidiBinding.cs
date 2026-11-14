@@ -1,3 +1,4 @@
+using SonarQuickMixer.Localization;
 using SonarQuickMixer.Sonar;
 
 namespace SonarQuickMixer.Midi;
@@ -59,11 +60,13 @@ public sealed class MidiBinding
             return $"PB {(0xE0 + Math.Clamp(controller, 0, 15)):X2}";
         }
 
-        return isNote ? $"Note {controller}" : $"CC {controller}";
+        return isNote
+            ? Loc.Format("midi.hardware.note", controller)
+            : Loc.Format("midi.hardware.cc", controller);
     }
 
     public static string FormatChannelLabel(string? channelId) =>
         string.IsNullOrWhiteSpace(channelId) || !SonarChannels.IsValidChannel(channelId)
-            ? "Not assigned"
+            ? Loc.Get("midi.binding.notAssigned")
             : SonarChannels.GetDisplayName(channelId);
 }

@@ -91,9 +91,19 @@ flowchart LR
 | `Tray/` | `SonarQuickMixer.Tray` | Tray icon assets and popup placement |
 | `Updates/` | `SonarQuickMixer.Updates` | GitHub release check and version info |
 | `Controls/` | `SonarQuickMixer.Controls` | Reusable WPF controls and attached properties |
+| `Localization/` | `SonarQuickMixer.Localization` | JSON language packs (`Languages/*.json`), runtime catalog, `{loc:Tr}` markup extension |
 | `Presets/` | — | Official MIDI device layout JSON (copied to output) |
 
 `App.xaml.cs` stays at the project root and wires services, tray, and the main window together.
+
+## Localization
+
+All user-facing text is looked up through `LocalizationManager` (language packs embedded from
+`Localization/Languages/*.json`, plus optional drop-in files in `Languages\` beside the exe).
+XAML uses `{loc:Tr section.key}` which binds to the catalog indexer, so switching language updates
+every visible label in place via the `Item[]` property-change notification. Code-behind uses
+`Loc.Get` / `Loc.Format` and stores `Loc.Text(...)` tokens for status lines that must re-render.
+Adding a language is only a new JSON file — see [Development → Localization](development.md#localization).
 
 ## MIDI integration
 

@@ -27,6 +27,10 @@
 
 The executable uses a separate **app icon** (rounded tile) for Task Manager and shortcuts. Tray icons are minimal three-bar glyphs without a background tile.
 
+### Language
+
+The app ships with **English** and **Russian**. Choose a language under **Settings → Appearance → Language**, or leave it on **Automatic (system)** to follow the Windows display language. The whole UI — mixer, settings, volume overlay, MIDI Setup, update dialog, and tray menu — switches immediately; no restart is needed.
+
 ### Media Keys Override
 
 When enabled, global **Volume Up**, **Volume Down**, and **Volume Mute** keys are intercepted and applied to a **selected Sonar channel** (default: Master) via the Sonar API.
@@ -140,7 +144,7 @@ Place a shortcut in the Startup folder (`Win+R` → `shell:startup`). Prefer the
 - Mute buttons follow the monitoring or streaming path for each row.
 - In streamer mode, **Stream** rows mirror Sonar’s streamer mixer.
 
-Settings save on toggle or when the mixer closes. Tray icon style applies immediately without restart.
+Settings save on toggle or when the mixer closes. Tray icon style and language apply immediately without restart.
 
 ---
 
@@ -159,6 +163,7 @@ Settings save on toggle or when the mixer closes. Tray icon style applies immedi
 | `DiscordScreenshareEchoFix` | `false` | Per-app Discord mute on Sonar endpoints (see above) |
 | `AudioVisualizerEnabled` | `true` | Live level meters on sliders |
 | `TrayIconStyle` | `0` | `0` Auto, `1` Accent, `2` White, `3` Dark |
+| `Language` | `"auto"` | `"auto"` (Windows display language), `"en"`, `"ru"`, or a drop-in language code |
 | `MidiEnabled` | `false` | Open selected MIDI input/output ports and apply bindings |
 | `MidiRelativeStep` | `0.02` | Volume step per relative encoder tick (2%) |
 

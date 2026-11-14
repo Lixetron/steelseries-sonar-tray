@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using SonarQuickMixer.Localization;
 using SonarQuickMixer.Sonar;
 
 namespace SonarQuickMixer.Mixing;
@@ -127,7 +128,7 @@ internal sealed class DeviceSelectorCoordinator
             var success = await _apiClient.SetOutputDeviceAsync(deviceId).ConfigureAwait(true);
             if (!success)
             {
-                _setStatusText?.Invoke("Failed to set output device");
+                _setStatusText?.Invoke(Loc.Get("devices.failedOutput"));
                 await RefreshAsync().ConfigureAwait(true);
             }
         }
@@ -156,7 +157,7 @@ internal sealed class DeviceSelectorCoordinator
             var success = await _apiClient.SetMicrophoneDeviceAsync(deviceId).ConfigureAwait(true);
             if (!success)
             {
-                _setStatusText?.Invoke("Failed to set microphone");
+                _setStatusText?.Invoke(Loc.Get("devices.failedMicrophone"));
                 await RefreshAsync().ConfigureAwait(true);
             }
         }
@@ -191,7 +192,7 @@ internal sealed class DeviceSelectorCoordinator
             {
                 combo.Items.Add(new ComboBoxItem
                 {
-                    Content = "No devices found",
+                    Content = Loc.Get("devices.noneFound"),
                     IsEnabled = false
                 });
                 combo.SelectedIndex = 0;
@@ -219,7 +220,7 @@ internal sealed class DeviceSelectorCoordinator
             {
                 var missing = new ComboBoxItem
                 {
-                    Content = "Unknown device",
+                    Content = Loc.Get("devices.unknown"),
                     Tag = selectedDeviceId
                 };
                 combo.Items.Insert(0, missing);

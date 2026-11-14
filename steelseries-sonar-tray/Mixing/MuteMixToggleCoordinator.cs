@@ -1,4 +1,5 @@
 using System.Windows.Controls.Primitives;
+using SonarQuickMixer.Localization;
 using SonarQuickMixer.Sonar;
 
 namespace SonarQuickMixer.Mixing;
@@ -61,7 +62,7 @@ public sealed class MuteMixToggleCoordinator
                     _mixerRegistry.UpdateSliderVisual(linkedSlider);
                 }
 
-                _setStatusText("Failed to update mute");
+                _setStatusText(Loc.Get("mixer.status.failedMute"));
                 return;
             }
 
@@ -76,7 +77,7 @@ public sealed class MuteMixToggleCoordinator
                 _mixerRegistry.UpdateSliderVisual(linkedSlider);
             }
 
-            _setStatusText("Failed to update mute");
+            _setStatusText(Loc.Get("mixer.status.failedMute"));
         }
     }
 
@@ -110,7 +111,7 @@ public sealed class MuteMixToggleCoordinator
                     _refreshAllSliderLevels();
                 }
 
-                _setStatusText("Failed to update mix routing");
+                _setStatusText(Loc.Get("mixer.status.failedMix"));
                 return;
             }
 
@@ -126,7 +127,7 @@ public sealed class MuteMixToggleCoordinator
                 _refreshAllSliderLevels();
             }
 
-            _setStatusText("Failed to update mix routing");
+            _setStatusText(Loc.Get("mixer.status.failedMix"));
         }
     }
 }

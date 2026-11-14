@@ -49,6 +49,9 @@
     <EmbeddedResource Include="Assets\tray-dark.ico">
       <LogicalName>tray-dark.ico</LogicalName>
     </EmbeddedResource>
+    <!-- Built-in UI languages. Optional drop-in overrides live in Languages\ beside the exe. -->
+    <None Remove="Localization\Languages\*.json" />
+    <EmbeddedResource Include="Localization\Languages\*.json" />
   </ItemGroup>
 
   <!-- DryWetMidi's NuGet targets always CopyToOutput the macOS .dylib; drop it on Windows publishes. -->

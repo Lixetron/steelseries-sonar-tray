@@ -69,6 +69,24 @@ public sealed class VolumeOverlayService : IDisposable
         _ = _dispatcher.BeginInvoke(() => ShowInternal(state));
     }
 
+    /// <summary>Re-renders the visible overlay in the new language (if it is on screen).</summary>
+    public void RefreshLocalization()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        if (_dispatcher.CheckAccess())
+        {
+            _window?.RefreshLocalization();
+        }
+        else
+        {
+            _dispatcher.Invoke(() => _window?.RefreshLocalization());
+        }
+    }
+
     public void Dispose()
     {
         if (_disposed)

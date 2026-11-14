@@ -1,5 +1,6 @@
 using System.Windows.Controls;
 using System.Windows.Threading;
+using SonarQuickMixer.Localization;
 using SonarQuickMixer.Sonar;
 
 namespace SonarQuickMixer.Mixing;
@@ -107,7 +108,7 @@ public sealed class VolumeSendCoordinator
             var updatedVolumes = await _apiClient.SetVolumeAsync(channel, volume, path).ConfigureAwait(true);
             if (updatedVolumes is null)
             {
-                _setStatusText("Failed to update Sonar volume");
+                _setStatusText(Loc.Get("mixer.status.failedVolume"));
             }
             else
             {
@@ -124,7 +125,7 @@ public sealed class VolumeSendCoordinator
         }
         catch (Exception)
         {
-            _setStatusText("Failed to update Sonar volume");
+            _setStatusText(Loc.Get("mixer.status.failedVolume"));
         }
         finally
         {

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using SonarQuickMixer.Localization;
 
 namespace SonarQuickMixer.Midi;
 
@@ -32,7 +33,7 @@ public static class MidiLayoutJson
 
         if (string.IsNullOrWhiteSpace(json))
         {
-            error = "JSON is empty.";
+            error = Loc.Get("midi.json.error.empty");
             return false;
         }
 
@@ -45,7 +46,7 @@ public static class MidiLayoutJson
         }
         catch (JsonException ex)
         {
-            error = FormatJsonException("Invalid JSON syntax", ex);
+            error = FormatJsonException(Loc.Get("midi.json.error.invalidSyntax"), ex);
             return false;
         }
 
@@ -56,18 +57,18 @@ public static class MidiLayoutJson
         }
         catch (JsonException ex)
         {
-            error = FormatJsonException("JSON does not match the layout schema", ex);
+            error = FormatJsonException(Loc.Get("midi.json.error.schema"), ex);
             return false;
         }
         catch (NotSupportedException ex)
         {
-            error = $"JSON does not match the layout schema: {ex.Message}";
+            error = Loc.Format("midi.json.error.schemaDetail", ex.Message);
             return false;
         }
 
         if (parsed is null)
         {
-            error = "JSON deserialized to an empty layout.";
+            error = Loc.Get("midi.json.error.emptyLayout");
             return false;
         }
 
@@ -90,7 +91,7 @@ public static class MidiLayoutJson
 
         if (string.IsNullOrWhiteSpace(layout.Name))
         {
-            error = "Layout \"name\" is required.";
+            error = Loc.Get("midi.json.error.nameRequired");
             return false;
         }
 
@@ -100,13 +101,13 @@ public static class MidiLayoutJson
             var region = layout.Regions[i];
             if (string.IsNullOrWhiteSpace(region.Id))
             {
-                error = $"regions[{i}]: \"id\" is required.";
+                error = Loc.Format("midi.json.error.regionIdRequired", i);
                 return false;
             }
 
             if (!regionIds.Add(region.Id))
             {
-                error = $"Duplicate region id \"{region.Id}\".";
+                error = Loc.Format("midi.json.error.duplicateRegionId", region.Id);
                 return false;
             }
         }
@@ -121,20 +122,20 @@ public static class MidiLayoutJson
 
             if (!regionIds.Contains(region.ParentRegionId))
             {
-                error = $"regions[{i}] (\"{region.Id}\"): parentRegionId \"{region.ParentRegionId}\" does not exist.";
+                error = Loc.Format("midi.json.error.parentMissing", i, region.Id, region.ParentRegionId);
                 return false;
             }
 
             if (string.Equals(region.Id, region.ParentRegionId, StringComparison.OrdinalIgnoreCase))
             {
-                error = $"regions[{i}] (\"{region.Id}\"): parentRegionId cannot reference itself.";
+                error = Loc.Format("midi.json.error.parentSelf", i, region.Id);
                 return false;
             }
         }
 
         if (HasRegionCycle(layout.Regions))
         {
-            error = "regions contain a parentRegionId cycle.";
+            error = Loc.Get("midi.json.error.parentCycle");
             return false;
         }
 
@@ -144,37 +145,37 @@ public static class MidiLayoutJson
             var control = layout.Controls[i];
             if (string.IsNullOrWhiteSpace(control.Id))
             {
-                error = $"controls[{i}]: \"id\" is required.";
+                error = Loc.Format("midi.json.error.controlIdRequired", i);
                 return false;
             }
 
             if (!controlIds.Add(control.Id))
             {
-                error = $"Duplicate control id \"{control.Id}\".";
+                error = Loc.Format("midi.json.error.duplicateControlId", control.Id);
                 return false;
             }
 
             if (!string.IsNullOrWhiteSpace(control.RegionId) && !regionIds.Contains(control.RegionId))
             {
-                error = $"controls[{i}] (\"{control.Id}\"): regionId \"{control.RegionId}\" does not exist.";
+                error = Loc.Format("midi.json.error.regionMissing", i, control.Id, control.RegionId);
                 return false;
             }
 
             if (control.Controller is < 0 or > 127)
             {
-                error = $"controls[{i}] (\"{control.Id}\"): controller must be 0–127 when set.";
+                error = Loc.Format("midi.json.error.controllerRange", i, control.Id);
                 return false;
             }
 
             if (control.IsPitchBend && control.Controller is > 15)
             {
-                error = $"controls[{i}] (\"{control.Id}\"): pitch-bend controller must be MIDI channel 0–15.";
+                error = Loc.Format("midi.json.error.pitchBendRange", i, control.Id);
                 return false;
             }
 
             if (control.RowSpan < 1 || control.ColSpan < 1)
             {
-                error = $"controls[{i}] (\"{control.Id}\"): rowSpan/colSpan must be ≥ 1.";
+                error = Loc.Format("midi.json.error.spanRange", i, control.Id);
                 return false;
             }
 
@@ -198,7 +199,7 @@ public static class MidiLayoutJson
 
         if (feedback.Source is not (MidiFeedbackSource.Mute or MidiFeedbackSource.ChannelAssigned))
         {
-            error = $"controls[{index}] (\"{control.Id}\"): unsupported feedback.source.";
+            error = Loc.Format("midi.json.error.unsupportedFeedbackSource", index, control.Id);
             return false;
         }
 
@@ -215,8 +216,7 @@ public static class MidiLayoutJson
         // Defaults derive from input identity — require a factory controller when on/off omitted.
         if ((feedback.On is null || feedback.Off is null) && control.Controller is null)
         {
-            error =
-                $"controls[{index}] (\"{control.Id}\"): feedback with omitted on/off requires controller so defaults can be derived.";
+            error = Loc.Format("midi.json.error.feedbackNeedsController", index, control.Id);
             return false;
         }
 
@@ -238,19 +238,19 @@ public static class MidiLayoutJson
 
         if (message.Controller is < 0 or > 127)
         {
-            error = $"controls[{index}] (\"{controlId}\"): feedback.{which}.controller must be 0–127.";
+            error = Loc.Format("midi.json.error.feedbackControllerRange", index, controlId, which);
             return false;
         }
 
         if (message.Value is < 0 or > 127)
         {
-            error = $"controls[{index}] (\"{controlId}\"): feedback.{which}.value must be 0–127.";
+            error = Loc.Format("midi.json.error.feedbackValueRange", index, controlId, which);
             return false;
         }
 
         if (message.Channel is < 1 or > 16)
         {
-            error = $"controls[{index}] (\"{controlId}\"): feedback.{which}.channel must be 1–16.";
+            error = Loc.Format("midi.json.error.feedbackChannelRange", index, controlId, which);
             return false;
         }
 
@@ -292,14 +292,14 @@ public static class MidiLayoutJson
         // LineNumber / BytePositionInLine are 0-based in System.Text.Json.
         if (ex.LineNumber is long line && ex.BytePositionInLine is long column)
         {
-            return $"{prefix} at line {line + 1}, position {column + 1}: {ex.Message}";
+            return Loc.Format("midi.json.error.linePosition", prefix, line + 1, column + 1, ex.Message);
         }
 
         if (ex.LineNumber is long lineOnly)
         {
-            return $"{prefix} at line {lineOnly + 1}: {ex.Message}";
+            return Loc.Format("midi.json.error.lineOnly", prefix, lineOnly + 1, ex.Message);
         }
 
-        return $"{prefix}: {ex.Message}";
+        return Loc.Format("midi.json.error.generic", prefix, ex.Message);
     }
 }

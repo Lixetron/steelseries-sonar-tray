@@ -1,5 +1,7 @@
 using SonarQuickMixer.Sonar;
 
+using SonarQuickMixer.Localization;
+
 namespace SonarQuickMixer.Midi;
 
 /// <summary>
@@ -14,20 +16,20 @@ public partial class MidiConfigController
     {
         if (!CanLearnHardware)
         {
-            StatusText = "Use device and open Edit layout to Learn hardware.";
+            SetStatus("midi.status.learnStartHint");
             return;
         }
 
         if (Devices.All(d => !d.IsEnabled) && string.IsNullOrWhiteSpace(SelectedDeviceName))
         {
-            StatusText = "Enable a MIDI device first.";
+            SetStatus("midi.status.enableDeviceToLearn");
             return;
         }
 
         CancelLearn();
         _learningControl = control;
         control.IsLearning = true;
-        StatusText = "Listening… move the hardware control now (or Cancel Learn).";
+        SetStatus("midi.status.learnListening");
 
         _learnCts = new CancellationTokenSource();
         try
@@ -44,7 +46,7 @@ public partial class MidiConfigController
         }
         catch (OperationCanceledException)
         {
-            StatusText = "MIDI Learn cancelled.";
+            SetStatus("midi.status.learnCancelled");
         }
         finally
         {
@@ -135,11 +137,11 @@ public partial class MidiConfigController
         _midi.MappingStore.Upsert(binding);
         ApplyBindingToVm(control, binding);
         control.ApplyIncomingVisual(evt.RawValue, evt.IsPitchBend);
-        var stolen = previousOwner is null ? string.Empty : $" (moved from {previousOwner.Label})";
+        var stolen = previousOwner is null ? string.Empty : Loc.Format("midi.status.learnMovedFrom", previousOwner.Label);
         var hw = MidiBinding.FormatHardwareLabel(evt.IsNote, evt.Controller, evt.IsPitchBend);
-        StatusText = binding.HasSonarChannel
-            ? $"Linked {control.Label} to {hw} → {MidiBinding.FormatChannelLabel(binding.ChannelId)}.{stolen}"
-            : $"Discovered {control.Label} as {hw} on {evt.DeviceName}.{stolen}";
+        SetStatus(binding.HasSonarChannel
+            ? Loc.Text("midi.status.learnLinked", control.Label, hw, MidiBinding.FormatChannelLabel(binding.ChannelId), stolen)
+            : Loc.Text("midi.status.learnDiscovered", control.Label, hw, evt.DeviceName, stolen));
     }
 
     private BlueprintControlVm? FindControlOwningHardware(MidiIncomingEvent evt) =>
@@ -170,7 +172,7 @@ public partial class MidiConfigController
         {
             var hw = MidiBinding.FormatHardwareLabel(evt.IsNote, evt.Controller, evt.IsPitchBend);
             var raw = MidiValueParser.FormatRawDisplay(evt.RawValue, evt.IsPitchBend);
-            StatusText = $"MIDI ← {evt.DeviceName}: {hw} = {raw}";
+            SetStatus(Loc.Text("midi.status.learnRaw", evt.DeviceName, hw, raw));
             TryAutoDiscover(evt);
         });
     }
@@ -204,10 +206,10 @@ public partial class MidiConfigController
                 && !evt.IsPitchBend
                 && (evt.IsNote || probe.LooksLikeButton || evt.RawValue is 0 or 127))
             {
-                StatusText =
-                    $"{MidiBinding.FormatHardwareLabel(evt.IsNote, evt.Controller, evt.IsPitchBend)} is already on {existingVm.Label}. " +
-                    "Same CC as this button. If your device has a Note/Pitch Bend mode for unique buttons+faders, use that, " +
-                    "or Reset that encoder and Learn the button instead.";
+                SetStatus(Loc.Text(
+                    "midi.status.learnAlreadyOnControl",
+                    MidiBinding.FormatHardwareLabel(evt.IsNote, evt.Controller, evt.IsPitchBend),
+                    existingVm.Label));
             }
 
             return;
@@ -218,9 +220,10 @@ public partial class MidiConfigController
         if (owner is not null)
         {
             owner.ApplyIncomingVisual(evt.RawValue, evt.IsPitchBend);
-            StatusText =
-                $"{MidiBinding.FormatHardwareLabel(evt.IsNote, evt.Controller, evt.IsPitchBend)} already bound to {owner.Label}. " +
-                "Click a free slot and Learn to reassign, or Reset the owner first.";
+            SetStatus(Loc.Text(
+                "midi.status.learnAlreadyBound",
+                MidiBinding.FormatHardwareLabel(evt.IsNote, evt.Controller, evt.IsPitchBend),
+                owner.Label));
             return;
         }
 
@@ -307,8 +310,10 @@ public partial class MidiConfigController
             free.IsPressed = evt.RawValue > 0;
         }
 
-        StatusText =
-            $"Discovered {free.Label} as {MidiBinding.FormatHardwareLabel(evt.IsNote, evt.Controller, evt.IsPitchBend)}. Assign a Sonar channel when ready.";
+        SetStatus(Loc.Text(
+            "midi.status.learnDiscoveredFree",
+            free.Label,
+            MidiBinding.FormatHardwareLabel(evt.IsNote, evt.Controller, evt.IsPitchBend)));
     }
 
     private MidiBinding? FindStoredBinding(MidiIncomingEvent evt)

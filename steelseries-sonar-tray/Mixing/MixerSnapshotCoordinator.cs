@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using SonarQuickMixer.Localization;
 using SonarQuickMixer.Sonar;
 
 namespace SonarQuickMixer.Mixing;
@@ -42,7 +43,26 @@ public sealed class MixerSnapshotCoordinator
     {
         _setStatusText(HasCachedConnectionStatus()
             ? _cachedStatusText!
-            : "Connecting to Sonar...");
+            : Loc.Get("mixer.status.connecting"));
+    }
+
+    /// <summary>Re-renders the cached status line after a language switch.</summary>
+    public void RefreshLocalizedStatus()
+    {
+        if (!_apiClient.IsConnected)
+        {
+            _setStatusText(Loc.Get("mixer.status.unavailable"));
+            return;
+        }
+
+        if (_cachedMixerSnapshot is not null)
+        {
+            _cachedStatusText = BuildStatusText(_cachedMixerSnapshot);
+            _setStatusText(_cachedStatusText);
+            return;
+        }
+
+        RestoreOrShowConnectingStatus();
     }
 
     public void ClearCachedStatusText()
@@ -240,7 +260,7 @@ public sealed class MixerSnapshotCoordinator
         if (!_apiClient.IsConnected)
         {
             ClearCachedStatusText();
-            _setStatusText("Sonar API unavailable");
+            _setStatusText(Loc.Get("mixer.status.unavailable"));
         }
         else
         {
@@ -253,13 +273,14 @@ public sealed class MixerSnapshotCoordinator
     {
         if (!_apiClient.IsConnected)
         {
-            return "Sonar API unavailable";
+            return Loc.Get("mixer.status.unavailable");
         }
 
-        var portSuffix = _apiClient.Port is int port ? $" · port {port}" : string.Empty;
-        var modeLabel = snapshot.IsStreamerMode ? "Streamer mode" : "Classic mode";
+        var modeLabel = Loc.Get(snapshot.IsStreamerMode ? "mixer.status.streamerMode" : "mixer.status.classicMode");
         var channelCount = snapshot.EnabledChannels.Count;
-        return $"{modeLabel} · {channelCount} channels{portSuffix}";
+        return _apiClient.Port is int port
+            ? Loc.Format("mixer.status.summaryWithPort", modeLabel, channelCount, port)
+            : Loc.Format("mixer.status.summary", modeLabel, channelCount);
     }
 
     private void ApplyChannelVisibility(SonarMixerSnapshot snapshot)

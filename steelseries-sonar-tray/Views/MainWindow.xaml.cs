@@ -7,6 +7,7 @@ using System.Windows.Threading;
 using SonarQuickMixer.Audio;
 using SonarQuickMixer.Controls;
 using SonarQuickMixer.Headset;
+using SonarQuickMixer.Localization;
 using SonarQuickMixer.Midi;
 using SonarQuickMixer.Mixing;
 using SonarQuickMixer.Services;
@@ -114,6 +115,7 @@ public partial class MainWindow : Window
             MediaKeysOverrideChannelCombo,
             MediaKeysOverrideChannelPanel,
             TrayIconStyleCombo,
+            LanguageCombo,
             ShowDeviceNameToggle,
             ShowDeviceBatteryToggle,
             ShowDeviceConnectionToggle,
@@ -173,6 +175,7 @@ public partial class MainWindow : Window
         _backgroundSyncTimer.Start();
 
         _settingsPanel.InitializeFromSettings();
+        Loc.LanguageChanged += OnLanguageChanged;
         _mediaKeysOverride.MixerChanged += ExternalMixerChanged;
         if (_midiControl is not null)
         {
@@ -182,6 +185,7 @@ public partial class MainWindow : Window
 
         Closed += (_, _) =>
         {
+            Loc.LanguageChanged -= OnLanguageChanged;
             _mediaKeysOverride.MixerChanged -= ExternalMixerChanged;
             if (_midiControl is not null)
             {
@@ -310,7 +314,7 @@ public partial class MainWindow : Window
         }
         else
         {
-            StatusText.Text = "Sonar API unavailable";
+            StatusText.Text = Loc.Get("mixer.status.unavailable");
         }
 
         _ = RefreshDeviceInfoAsync();
@@ -869,12 +873,17 @@ public partial class MainWindow : Window
 
     private static string BuildBatteryTooltip(HeadsetDeviceInfo? info, BatteryIconKind kind)
     {
-        var name = string.IsNullOrWhiteSpace(info?.DisplayName) ? "Headset" : info!.DisplayName!;
+        var name = string.IsNullOrWhiteSpace(info?.DisplayName)
+            ? Loc.Get("mixer.defaultHeadsetName")
+            : info!.DisplayName!;
         return kind switch
         {
-            BatteryIconKind.Charging when info?.BatteryPercent is int p => $"{name}: {p}% · charging",
-            BatteryIconKind.Empty when info?.IsHeadsetPowered == false => $"{name}: powered off",
-            _ when info?.BatteryPercent is int percent => $"{name}: {percent}%",
+            BatteryIconKind.Charging when info?.BatteryPercent is int p =>
+                Loc.Format("mixer.battery.charging", name, p),
+            BatteryIconKind.Empty when info?.IsHeadsetPowered == false =>
+                Loc.Format("mixer.battery.poweredOff", name),
+            _ when info?.BatteryPercent is int percent =>
+                Loc.Format("mixer.battery.percent", name, percent),
             _ => name
         };
     }
@@ -904,6 +913,22 @@ public partial class MainWindow : Window
 
     private void TrayIconStyleCombo_SelectionChanged(object sender, SelectionChangedEventArgs e) =>
         _settingsPanel.OnTrayIconStyleChanged();
+
+    private void LanguageCombo_SelectionChanged(object sender, SelectionChangedEventArgs e) =>
+        _settingsPanel.OnLanguageChanged();
+
+    private void OnLanguageChanged(object? sender, EventArgs e)
+    {
+        // Deferred so rebuilding the language picker never re-enters its own SelectionChanged.
+        Dispatcher.BeginInvoke(new Action(() =>
+        {
+            _settingsPanel.RefreshLocalization();
+            _updateNotification.RefreshLocalization();
+            _mixerSnapshot.RefreshLocalizedStatus();
+            _ = RefreshDeviceInfoAsync(force: true);
+            _ = _deviceSelectors.RefreshAsync();
+        }), DispatcherPriority.Background);
+    }
 
     private void ExternalMixerChanged()
     {

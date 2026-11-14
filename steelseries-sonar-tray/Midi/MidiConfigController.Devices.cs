@@ -1,3 +1,5 @@
+using SonarQuickMixer.Localization;
+
 namespace SonarQuickMixer.Midi;
 
 /// <summary>
@@ -61,7 +63,7 @@ public partial class MidiConfigController
     {
         if (string.IsNullOrWhiteSpace(SelectedDeviceName))
         {
-            StatusText = "Select a MIDI device in the list first.";
+            SetStatus("midi.status.selectMidiDeviceFirst");
             return;
         }
 
@@ -79,7 +81,7 @@ public partial class MidiConfigController
     {
         if (string.IsNullOrWhiteSpace(SelectedDeviceName))
         {
-            StatusText = "Select a MIDI device in the list first.";
+            SetStatus("midi.status.selectMidiDeviceFirst");
             return;
         }
 
@@ -101,14 +103,14 @@ public partial class MidiConfigController
 
         if (device is null)
         {
-            StatusText = "Device is no longer available.";
+            SetStatus("midi.status.deviceUnavailable");
             return;
         }
 
         device.IsEnabled = true;
         device.IsHidden = false;
         PersistEnabledDevices();
-        StatusText = $"Using {SelectedDeviceName}. Assign Sonar channels or Learn MIDI as needed.";
+        SetStatus(Loc.Text("midi.status.usingDevice", SelectedDeviceName));
     }
 
     public void StopUsingSelectedDevice()
@@ -127,14 +129,14 @@ public partial class MidiConfigController
         }
 
         PersistEnabledDevices();
-        StatusText = $"{SelectedDeviceName} is preview-only (not used). Click Use device to activate.";
+        SetStatus(Loc.Text("midi.status.previewOnly", SelectedDeviceName));
     }
 
     public void HideSelectedDevice()
     {
         if (string.IsNullOrWhiteSpace(SelectedDeviceName))
         {
-            StatusText = "Select a device to hide.";
+            SetStatus("midi.status.selectDeviceToHide");
             return;
         }
 
@@ -142,7 +144,7 @@ public partial class MidiConfigController
         CancelLearn();
         _midi.MappingStore.HideDevice(name);
         _midi.ApplyEnabledDevicesFromStore();
-        StatusText = $"Hidden {name}. Enable \"Show hidden\" to bring it back.";
+        SetStatus(Loc.Text("midi.status.hiddenDevice", name));
         RefreshDevices();
     }
 
@@ -150,13 +152,13 @@ public partial class MidiConfigController
     {
         if (string.IsNullOrWhiteSpace(SelectedDeviceName))
         {
-            StatusText = "Select a device to show.";
+            SetStatus("midi.status.selectDeviceToShow");
             return;
         }
 
         var name = SelectedDeviceName;
         _midi.MappingStore.RevealDevice(name);
-        StatusText = $"Showing {name}. You can Use device to activate it.";
+        SetStatus(Loc.Text("midi.status.showingDevice", name));
         if (!_showHiddenDevices)
         {
             // Ensure it appears even when the filter is off (user explicitly revealed it).
@@ -211,8 +213,7 @@ public partial class MidiConfigController
         ReloadLayoutForSelectedDevice();
         if (seeded > 0 && IsSelectedDeviceInUse)
         {
-            StatusText =
-                $"Listening to {enabled.Count} device(s). Applied {seeded} factory mapping(s) from preset — assign Sonar channels.";
+            SetStatus(Loc.Text("midi.status.listeningSeeded", enabled.Count, seeded));
         }
     }
 

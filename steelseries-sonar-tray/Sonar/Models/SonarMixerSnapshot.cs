@@ -1,3 +1,5 @@
+using SonarQuickMixer.Localization;
+
 namespace SonarQuickMixer.Sonar;
 
 public sealed class SonarMixerSnapshot
@@ -30,11 +32,11 @@ public static class SonarChannels
 
     public static string GetDisplayName(string channel) => channel.ToLowerInvariant() switch
     {
-        "master" => "Master",
-        "game" => "Game",
-        "chatrender" => "Chat",
-        "media" => "Media",
-        "aux" => "Aux",
+        "master" => Loc.Get("channel.master"),
+        "game" => Loc.Get("channel.game"),
+        "chatrender" => Loc.Get("channel.chat"),
+        "media" => Loc.Get("channel.media"),
+        "aux" => Loc.Get("channel.aux"),
         _ => channel
     };
 

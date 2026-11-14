@@ -104,6 +104,7 @@ Enable a MIDI port whose name contains `My Controller`, open MIDI Setup, assign 
 | `name` | string | recommended | Display name; also used as fallback match if `deviceMatch` is empty |
 | `deviceMatch` | string[] | recommended | Substrings matched against the Windows MIDI port name (case-insensitive, either side may contain the other) |
 | `hint` | string | no | Tip text in MIDI Setup |
+| `hintKey` | string | no | Localization token for `hint` (e.g. `midi.preset.smcHint`); raw `hint` is used if the token is missing |
 | `columns` | int | no | Canvas width metadata (auto-synced from root children; keep ≥1) |
 | `rows` | int | no | Canvas height metadata (same) |
 | `regions` | object[] | no | Nested areas; omit or `[]` for a flat grid of controls |

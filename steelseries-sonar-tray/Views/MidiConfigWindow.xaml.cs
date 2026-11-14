@@ -5,6 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using SonarQuickMixer.Controls;
+using SonarQuickMixer.Localization;
 using SonarQuickMixer.Midi;
 using SonarQuickMixer.Sonar;
 using WpfMessageBox = System.Windows.MessageBox;
@@ -41,7 +42,7 @@ public partial class MidiConfigWindow : Window
 
         ChannelCombo.Items.Add(new ComboBoxItem
         {
-            Content = "Not assigned",
+            Content = Loc.Get("midi.binding.notAssigned"),
             Tag = MidiBinding.UnassignedChannelId
         });
 
@@ -67,13 +68,14 @@ public partial class MidiConfigWindow : Window
         DraftFeedbackStyleCombo.SelectedIndex = 0;
         SyncDeviceListSelection();
         UpdateLearnButtons();
+        Loc.LanguageChanged += OnLanguageChanged;
 
         _controller.ConfirmDiscardUnsavedAssignments = message =>
         {
             var result = WpfMessageBox.Show(
                 this,
-                message + "\n\nDiscard unsaved assignments?",
-                "Unsaved assignments",
+                message + Loc.Get("midi.dialog.discardSuffix"),
+                Loc.Get("midi.dialog.unsavedAssignments"),
                 WpfMessageBoxButton.YesNo,
                 WpfMessageBoxImage.Warning);
             return result == WpfMessageBoxResult.Yes;
@@ -86,7 +88,7 @@ public partial class MidiConfigWindow : Window
         Closing += (_, e) =>
         {
             if (!_controller.ConfirmDiscardBindingDraftsIfNeeded(
-                    "Closing MIDI Setup will discard unsaved channel assignments."))
+                    Loc.Get("midi.confirm.closing")))
             {
                 e.Cancel = true;
             }
@@ -94,6 +96,7 @@ public partial class MidiConfigWindow : Window
 
         Closed += (_, _) =>
         {
+            Loc.LanguageChanged -= OnLanguageChanged;
             _conflictTcs?.TrySetResult(false);
             _controller.PropertyChanged -= Controller_PropertyChanged;
             _controller.BlueprintLayoutRefreshRequested -= OnBlueprintLayoutRefreshRequested;
@@ -385,15 +388,17 @@ public partial class MidiConfigWindow : Window
     private static void RebuildFeedbackSourceCombo(bool forFader, System.Windows.Controls.ComboBox combo)
     {
         combo.Items.Clear();
-        combo.Items.Add(new ComboBoxItem { Content = "Off", Tag = "None" });
+        combo.Items.Add(new ComboBoxItem { Content = Loc.Get("midi.feedback.source.off"), Tag = "None" });
         if (!forFader)
         {
-            combo.Items.Add(new ComboBoxItem { Content = "On mute", Tag = "Mute" });
+            combo.Items.Add(new ComboBoxItem { Content = Loc.Get("midi.feedback.source.mute"), Tag = "Mute" });
         }
 
         combo.Items.Add(new ComboBoxItem
         {
-            Content = forFader ? "Channel assigned (soft takeover)" : "On channel selected",
+            Content = forFader
+                ? Loc.Get("midi.feedback.source.channelAssignedFader")
+                : Loc.Get("midi.feedback.source.channelAssigned"),
             Tag = "ChannelAssigned"
         });
     }
@@ -715,7 +720,92 @@ public partial class MidiConfigWindow : Window
         var canLearn = _controller.CanLearnHardware && _selectedControl is { IsPlaceholder: false };
         LearnButton.IsEnabled = canLearn && !_learnInProgress;
         CancelLearnButton.IsEnabled = _learnInProgress;
-        LearnButton.Content = _learnInProgress ? "Listening…" : "Learn MIDI";
+        LearnButton.Content = Loc.Get(_learnInProgress ? "midi.learnListening" : "midi.learn");
+    }
+
+    private void OnLanguageChanged(object? sender, EventArgs e)
+    {
+        _controller.RefreshLocalization();
+        RefreshLocalizedCombos();
+        UpdateLearnButtons();
+
+        if (ConflictOverlay.Visibility == Visibility.Visible && _conflictTcs is not null)
+        {
+            ConflictMessageText.Text = Loc.Get("midi.conflict.message");
+        }
+    }
+
+    /// <summary>
+    /// Rebuilds combo items created in code (channels, actions, LED sources) while keeping the
+    /// current tag selected. Inline XAML items update themselves via localization bindings.
+    /// </summary>
+    private void RefreshLocalizedCombos()
+    {
+        var channelTag = (ChannelCombo.SelectedItem as ComboBoxItem)?.Tag as string
+                         ?? MidiBinding.UnassignedChannelId;
+        var actionTag = (ActionCombo.SelectedItem as ComboBoxItem)?.Tag as string;
+
+        _syncingBindingCombos = true;
+        try
+        {
+            ChannelCombo.Items.Clear();
+            ChannelCombo.Items.Add(new ComboBoxItem
+            {
+                Content = Loc.Get("midi.binding.notAssigned"),
+                Tag = MidiBinding.UnassignedChannelId
+            });
+
+            foreach (var channel in SonarChannels.All)
+            {
+                ChannelCombo.Items.Add(new ComboBoxItem
+                {
+                    Content = SonarChannels.GetDisplayName(channel),
+                    Tag = channel
+                });
+            }
+
+            SelectChannelTag(channelTag);
+
+            var actionType = _selectedControl?.Type ?? MidiControlType.Fader;
+            var action = Enum.TryParse<MidiBindingAction>(actionTag, out var parsed)
+                ? parsed
+                : MidiBindingAction.None;
+            RebuildActionCombo(actionType, action);
+
+            if (_selectedControl is not null)
+            {
+                RebuildAndSyncFeedbackCombos(_selectedControl);
+            }
+            else
+            {
+                RebuildFeedbackSourceCombo(forFader: true, FeedbackSourceCombo);
+                FeedbackSourceCombo.SelectedIndex = 0;
+                FeedbackStyleCombo.SelectedIndex = 0;
+                RebuildFeedbackSourceCombo(forFader: true, DraftFeedbackSourceCombo);
+                DraftFeedbackSourceCombo.SelectedIndex = 0;
+                DraftFeedbackStyleCombo.SelectedIndex = 0;
+            }
+        }
+        finally
+        {
+            _syncingBindingCombos = false;
+        }
+    }
+
+    private void SelectChannelTag(string? channelTag)
+    {
+        var target = channelTag ?? MidiBinding.UnassignedChannelId;
+        for (var i = 0; i < ChannelCombo.Items.Count; i++)
+        {
+            if (ChannelCombo.Items[i] is ComboBoxItem { Tag: string tag }
+                && string.Equals(tag, target, StringComparison.OrdinalIgnoreCase))
+            {
+                ChannelCombo.SelectedIndex = i;
+                return;
+            }
+        }
+
+        ChannelCombo.SelectedIndex = 0;
     }
 
     private async void LearnButton_Click(object sender, RoutedEventArgs e)
@@ -820,8 +910,8 @@ public partial class MidiConfigWindow : Window
         }
 
         var result = WpfMessageBox.Show(
-            $"Delete user layout preset “{fileName}”?\n\nThis cannot be undone. Other presets are kept.",
-            "Delete user preset",
+            Loc.Format("midi.delete.confirm", fileName),
+            Loc.Get("midi.delete.confirmTitle"),
             WpfMessageBoxButton.YesNo,
             WpfMessageBoxImage.Warning);
         if (result != WpfMessageBoxResult.Yes)
@@ -842,15 +932,15 @@ public partial class MidiConfigWindow : Window
         }
 
         var initial = _controller.LayoutName;
-        if (string.IsNullOrWhiteSpace(initial) || initial is "Generic Custom Grid" or "Custom")
+        if (string.IsNullOrWhiteSpace(initial) || initial is PresetCatalog.GenericLayoutName or "Custom")
         {
-            initial = MidiDevicePortNaming.CoreProductName(_controller.SelectedDeviceName!) + " (custom)";
+            initial = Loc.Format("midi.customName", MidiDevicePortNaming.CoreProductName(_controller.SelectedDeviceName!));
         }
 
         if (!PromptTextWindow.TryPrompt(
                 this,
-                "Save layout preset as",
-                "Name for the new user preset:",
+                Loc.Get("midi.prompt.saveAsTitle"),
+                Loc.Get("midi.prompt.saveAsText"),
                 initial,
                 out var name))
         {
@@ -862,7 +952,7 @@ public partial class MidiConfigWindow : Window
         {
             WpfMessageBox.Show(
                 error,
-                "Save preset as",
+                Loc.Get("midi.prompt.saveAsErrorTitle"),
                 WpfMessageBoxButton.OK,
                 WpfMessageBoxImage.Warning);
             return;
@@ -881,13 +971,13 @@ public partial class MidiConfigWindow : Window
         var initial = _controller.LayoutName;
         if (string.IsNullOrWhiteSpace(initial))
         {
-            initial = MidiDevicePortNaming.CoreProductName(_controller.SelectedDeviceName!) + " (custom)";
+            initial = Loc.Format("midi.customName", MidiDevicePortNaming.CoreProductName(_controller.SelectedDeviceName!));
         }
 
         if (!PromptTextWindow.TryPrompt(
                 this,
-                "Rename layout preset",
-                "New name for this user preset:",
+                Loc.Get("midi.prompt.renameTitle"),
+                Loc.Get("midi.prompt.renameText"),
                 initial,
                 out var name))
         {
@@ -898,7 +988,7 @@ public partial class MidiConfigWindow : Window
         {
             WpfMessageBox.Show(
                 error,
-                "Rename preset",
+                Loc.Get("midi.prompt.renameErrorTitle"),
                 WpfMessageBoxButton.OK,
                 WpfMessageBoxImage.Warning);
             return;
@@ -914,8 +1004,8 @@ public partial class MidiConfigWindow : Window
 
         var dialog = new Microsoft.Win32.SaveFileDialog
         {
-            Title = "Export MIDI layout",
-            Filter = "MIDI layout JSON (*.json)|*.json|All files (*.*)|*.*",
+            Title = Loc.Get("midi.dialog.exportTitle"),
+            Filter = Loc.Get("midi.dialog.layoutJsonFilter"),
             DefaultExt = ".json",
             AddExtension = true,
             FileName = _controller.GetExportFileStem() + ".json",
@@ -932,16 +1022,16 @@ public partial class MidiConfigWindow : Window
             var json = _controller.ExportLayoutJson();
             File.WriteAllText(dialog.FileName, json);
             WpfMessageBox.Show(
-                $"Exported layout to:\n{dialog.FileName}",
-                "Export layout",
+                Loc.Format("midi.export.done", dialog.FileName),
+                Loc.Get("midi.export.doneTitle"),
                 WpfMessageBoxButton.OK,
                 WpfMessageBoxImage.Information);
         }
         catch (Exception ex)
         {
             WpfMessageBox.Show(
-                $"Could not export layout:\n\n{ex.Message}",
-                "Export layout",
+                Loc.Format("midi.export.failed", ex.Message),
+                Loc.Get("midi.export.doneTitle"),
                 WpfMessageBoxButton.OK,
                 WpfMessageBoxImage.Error);
         }
@@ -957,9 +1047,8 @@ public partial class MidiConfigWindow : Window
         if (!_controller.IsLayoutConstructorMode)
         {
             var confirm = WpfMessageBox.Show(
-                "Import a layout JSON as a new user preset for the selected device?\n\n" +
-                "Existing presets stay. MIDI channel bindings are not imported.",
-                "Import layout",
+                Loc.Get("midi.import.confirm"),
+                Loc.Get("midi.import.confirmTitle"),
                 WpfMessageBoxButton.YesNo,
                 WpfMessageBoxImage.Question);
             if (confirm != WpfMessageBoxResult.Yes)
@@ -970,8 +1059,8 @@ public partial class MidiConfigWindow : Window
 
         var dialog = new Microsoft.Win32.OpenFileDialog
         {
-            Title = "Import MIDI layout",
-            Filter = "MIDI layout JSON (*.json)|*.json|All files (*.*)|*.*",
+            Title = Loc.Get("midi.dialog.importTitle"),
+            Filter = Loc.Get("midi.dialog.layoutJsonFilter"),
             CheckFileExists = true,
             Multiselect = false
         };
@@ -989,8 +1078,8 @@ public partial class MidiConfigWindow : Window
         catch (Exception ex)
         {
             WpfMessageBox.Show(
-                $"Could not read file:\n\n{ex.Message}",
-                "Import layout",
+                Loc.Format("midi.import.readFailed", ex.Message),
+                Loc.Get("midi.import.confirmTitle"),
                 WpfMessageBoxButton.OK,
                 WpfMessageBoxImage.Error);
             return;
@@ -1001,7 +1090,7 @@ public partial class MidiConfigWindow : Window
         {
             WpfMessageBox.Show(
                 error,
-                "Import layout — invalid JSON",
+                Loc.Get("midi.import.invalidTitle"),
                 WpfMessageBoxButton.OK,
                 WpfMessageBoxImage.Warning);
             return;
@@ -1038,9 +1127,8 @@ public partial class MidiConfigWindow : Window
 
         var deviceName = _controller.SelectedDeviceName;
         var result = WpfMessageBox.Show(
-            $"Clear all MIDI bindings for “{deviceName}”?\n\n" +
-            "This removes discovered controls and Sonar channel assignments for this device (and its duplicate ports), then restores the factory map. Other devices are left alone.",
-            "Reset all bindings",
+            Loc.Format("midi.reset.confirm", deviceName),
+            Loc.Get("midi.reset.confirmTitle"),
             WpfMessageBoxButton.YesNo,
             WpfMessageBoxImage.Warning);
 
@@ -1097,14 +1185,14 @@ public partial class MidiConfigWindow : Window
     {
         var normalized = MidiBindingActions.Normalize(type, selected);
         ActionCombo.Items.Clear();
-        ActionCombo.Items.Add(new ComboBoxItem { Content = "None", Tag = "None" });
+        ActionCombo.Items.Add(new ComboBoxItem { Content = Loc.Get("midi.action.none"), Tag = "None" });
         if (type == MidiControlType.Button)
         {
-            ActionCombo.Items.Add(new ComboBoxItem { Content = "Mute toggle", Tag = "MuteToggle" });
+            ActionCombo.Items.Add(new ComboBoxItem { Content = Loc.Get("midi.action.muteToggle"), Tag = "MuteToggle" });
         }
         else
         {
-            ActionCombo.Items.Add(new ComboBoxItem { Content = "Volume", Tag = "Volume" });
+            ActionCombo.Items.Add(new ComboBoxItem { Content = Loc.Get("midi.action.volume"), Tag = "Volume" });
         }
 
         ActionCombo.SelectedIndex = normalized == MidiBindingAction.None ? 0 : 1;
@@ -1137,8 +1225,8 @@ public partial class MidiConfigWindow : Window
         }
 
         var result = WpfMessageBox.Show(
-            "Discard all unsaved channel / mode / action assignments for this device?",
-            "Discard assignments",
+            Loc.Get("midi.confirm.discardAll"),
+            Loc.Get("midi.preset.discardTitle"),
             WpfMessageBoxButton.YesNo,
             WpfMessageBoxImage.Question);
         if (result != WpfMessageBoxResult.Yes)
@@ -1165,8 +1253,7 @@ public partial class MidiConfigWindow : Window
     private Task<bool> ShowConflictOverlayAsync(IReadOnlyList<MidiBinding> conflicts)
     {
         var owners = string.Join(", ", conflicts.Select(c => $"{c.DeviceName} CC{c.Controller}"));
-        ConflictMessageText.Text =
-            $"Are you sure? Multiple non-motorized faders on one channel will cause volume fighting.\n\nExisting: {owners}";
+        ConflictMessageText.Text = Loc.Format("midi.conflict.messageWithOwners", owners);
         ConflictOverlay.Visibility = Visibility.Visible;
 
         _conflictTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);

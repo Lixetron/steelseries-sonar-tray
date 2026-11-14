@@ -2,6 +2,7 @@
   "name": "M-VAVE SMC-Mixer",
   "deviceMatch": [ "SMC-Mixer", "M-VAVE", "SMC Mixer" ],
   "hint": "Minimal factory map for DAW Mode / Mode A (Shift+←, Mackie Control): faders = Pitch Bend E0–E7, mute Notes 16–23, encoders = relative CC 16–23. No LED feedback baked in — configure in MIDI Setup. CC Mode / Mode B is Shift+→ (MidiSuite).",
+  "hintKey": "midi.preset.smcHint",
   "columns": 8,
   "rows": 3,
   "regions": [

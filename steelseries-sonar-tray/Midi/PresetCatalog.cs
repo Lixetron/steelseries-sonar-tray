@@ -2,6 +2,7 @@ using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
+using SonarQuickMixer.Localization;
 using SonarQuickMixer.Sonar;
 
 namespace SonarQuickMixer.Midi;
@@ -133,8 +134,8 @@ public sealed class PresetCatalog
         {
             Key = MidiPresetSelectionStore.OfficialKey,
             DisplayName = official is null
-                ? "Built-in generic grid"
-                : $"{official.Name} (official)",
+                ? Loc.Get("midi.preset.builtIn")
+                : Loc.Format("midi.preset.official", official.Name),
             IsOfficial = true
         });
 
@@ -162,7 +163,7 @@ public sealed class PresetCatalog
             list.Add(new MidiPresetOption
             {
                 Key = MidiPresetSelectionStore.UserKey(fileName),
-                DisplayName = $"{label} — {fileName}",
+                DisplayName = Loc.Format("midi.preset.user", label, fileName),
                 IsOfficial = false,
                 FileName = fileName
             });
@@ -347,6 +348,9 @@ public sealed class PresetCatalog
     private static bool IsReservedUserFile(string path) =>
         string.Equals(Path.GetFileName(path), "midi-preset-selection.json", StringComparison.OrdinalIgnoreCase);
 
+    /// <summary>Factory-neutral layout name; never localized because it is persisted in JSON.</summary>
+    public const string GenericLayoutName = "Generic Custom Grid";
+
     public static MidiDeviceLayout CreateGenericLayout(int columns = 4, int rows = 3)
     {
         var controls = new List<MidiLayoutControl>();
@@ -382,7 +386,7 @@ public sealed class PresetCatalog
 
         return new MidiDeviceLayout
         {
-            Name = "Generic Custom Grid",
+            Name = GenericLayoutName,
             DeviceMatch = [],
             Columns = columns,
             Rows = rows,

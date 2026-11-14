@@ -27,6 +27,8 @@ A lightweight Windows system-tray companion for [SteelSeries Sonar](https://www.
 
 Sonar Quick Mixer is a **daily-driver layer on top of Sonar**, not a replacement for GG. Routing apps to channels, mic setup, spatial audio, and driver management still live in SteelSeries GG.
 
+The interface ships in **English and Russian**, with an automatic system-language mode and JSON language packs for adding more.
+
 ---
 
 ## Quick start

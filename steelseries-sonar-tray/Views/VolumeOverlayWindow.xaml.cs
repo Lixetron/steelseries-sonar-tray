@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
+using SonarQuickMixer.Localization;
 using SonarQuickMixer.Services;
 using SonarQuickMixer.Sonar;
 
@@ -20,6 +21,7 @@ public partial class VolumeOverlayWindow : Window
 
     private Storyboard? _activeStoryboard;
     private TaskCompletionSource? _hideCompletion;
+    private IReadOnlyList<VolumeNotificationState> _lastChannels = [];
     private double _restLeft;
     private double _restTop;
 
@@ -54,6 +56,15 @@ public partial class VolumeOverlayWindow : Window
 
     public void UpdateContentOnly(IReadOnlyList<VolumeNotificationState> channels) =>
         UpdateContent(channels);
+
+    /// <summary>Re-renders the visible rows after a language switch.</summary>
+    public void RefreshLocalization()
+    {
+        if (IsVisible && _lastChannels.Count > 0)
+        {
+            UpdateContent(_lastChannels);
+        }
+    }
 
     public void StartEntranceAnimation()
     {
@@ -167,6 +178,7 @@ public partial class VolumeOverlayWindow : Window
 
     private void UpdateContent(IReadOnlyList<VolumeNotificationState> channels)
     {
+        _lastChannels = channels;
         var rows = new List<VolumeOverlayRowVm>(channels.Count);
         for (var i = 0; i < channels.Count; i++)
         {
@@ -235,7 +247,7 @@ public partial class VolumeOverlayWindow : Window
                 IconGlyph = hasMessage ? LockIcon : state.IsMuted ? MuteIcon : VolumeIcon,
                 FillWidth = state.IsMuted ? 0 : TrackWidth * volume,
                 ValueText = state.IsMuted
-                    ? "Mute"
+                    ? Loc.Get("overlay.mute")
                     : $"{Math.Clamp((int)Math.Round(volume * 100), 0, 100)}%",
                 AccentBrush = accent,
                 TrackBrush = CreateTrackBrush(accent.Color),

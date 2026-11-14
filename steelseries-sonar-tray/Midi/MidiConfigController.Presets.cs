@@ -1,4 +1,5 @@
 using System.IO;
+using SonarQuickMixer.Localization;
 
 namespace SonarQuickMixer.Midi;
 
@@ -13,11 +14,11 @@ public partial class MidiConfigController
     {
         if (string.IsNullOrWhiteSpace(SelectedDeviceName))
         {
-            StatusText = "Select a device first.";
+            SetStatus("midi.status.selectDeviceFirst");
             return;
         }
 
-        if (!ConfirmDiscardBindingDraftsIfNeeded("Opening the layout constructor will discard unsaved channel assignments."))
+        if (!ConfirmDiscardBindingDraftsIfNeeded(Loc.Get("midi.confirm.enterConstructor")))
         {
             return;
         }
@@ -40,8 +41,8 @@ public partial class MidiConfigController
         SetDraftHideBorderEnabled(false);
         IsLayoutConstructorMode = true;
         RebuildConstructorView();
-        StatusText =
-            "Layout constructor — drag areas/controls anywhere; Learn maps hardware here.";
+        OnPropertyChanged(nameof(LayoutDisplayName));
+        SetStatus("midi.status.layoutConstructor");
     }
 
     public void CancelLayoutConstructor(bool silent = false)
@@ -57,7 +58,7 @@ public partial class MidiConfigController
         ReloadLayoutForSelectedDevice();
         if (!silent)
         {
-            StatusText = "Layout edits discarded.";
+            SetStatus("midi.status.layoutEditsDiscarded");
         }
     }
 
@@ -76,9 +77,9 @@ public partial class MidiConfigController
             ..(string.Equals(core, deviceName, StringComparison.OrdinalIgnoreCase) ? Array.Empty<string>() : [core])
         ];
 
-        if (string.IsNullOrWhiteSpace(_draftLayout.Name) || _draftLayout.Name == "Generic Custom Grid")
+        if (string.IsNullOrWhiteSpace(_draftLayout.Name) || _draftLayout.Name == PresetCatalog.GenericLayoutName)
         {
-            _draftLayout.Name = $"{core} (custom)";
+            _draftLayout.Name = Loc.Format("midi.customName", core);
         }
 
         try
@@ -99,7 +100,7 @@ public partial class MidiConfigController
         }
         catch
         {
-            StatusText = "Failed to save user layout.";
+            SetStatus("midi.status.failedSaveUserLayout");
             return false;
         }
 
@@ -110,7 +111,7 @@ public partial class MidiConfigController
         IsLayoutConstructorMode = false;
         OnPropertyChanged(nameof(HasUserLayoutOverride));
         ReloadLayoutForSelectedDevice();
-        StatusText = $"Saved custom layout for {deviceName}.";
+        SetStatus(Loc.Text("midi.status.savedCustomLayout", deviceName));
         _midi.ClearStagedControlFeedback(deviceName);
         _ = _midi.RefreshHardwareFeedbackAsync(force: true);
         return true;
@@ -121,20 +122,20 @@ public partial class MidiConfigController
     {
         if (string.IsNullOrWhiteSpace(SelectedDeviceName))
         {
-            StatusText = "Select a device first.";
+            SetStatus("midi.status.selectDeviceFirst");
             return false;
         }
 
         if (IsLayoutConstructorMode)
         {
-            StatusText = "Finish or cancel layout editing first.";
+            SetStatus("midi.status.finishOrCancelFirst");
             return false;
         }
 
         CancelLearn();
         _presets.SetActivePresetKey(SelectedDeviceName, MidiPresetSelectionStore.OfficialKey);
         ReloadLayoutForSelectedDevice();
-        StatusText = "Using official / built-in layout preset.";
+        SetStatus("midi.status.usingOfficialPreset");
         return true;
     }
 
@@ -144,26 +145,26 @@ public partial class MidiConfigController
         if (SelectedLayoutPreset is not { IsUser: true, FileName: { } fileName }
             || string.IsNullOrWhiteSpace(SelectedDeviceName))
         {
-            StatusText = "Select a user layout preset to delete.";
+            SetStatus("midi.status.selectUserPresetToDelete");
             return false;
         }
 
         if (IsLayoutConstructorMode)
         {
-            StatusText = "Finish or cancel layout editing first.";
+            SetStatus("midi.status.finishOrCancelFirst");
             return false;
         }
 
         CancelLearn();
         if (!_presets.DeleteUserPresetFile(fileName))
         {
-            StatusText = $"Could not delete preset “{fileName}”.";
+            SetStatus(Loc.Text("midi.status.presetDeleteFailed", fileName));
             return false;
         }
 
         _presets.SetActivePresetKey(SelectedDeviceName, MidiPresetSelectionStore.OfficialKey);
         ReloadLayoutForSelectedDevice();
-        StatusText = $"Deleted user preset “{fileName}”. Switched to official layout.";
+        SetStatus(Loc.Text("midi.status.presetDeleted", fileName));
         return true;
     }
 
@@ -175,14 +176,14 @@ public partial class MidiConfigController
         error = string.Empty;
         if (string.IsNullOrWhiteSpace(SelectedDeviceName))
         {
-            error = "Select a MIDI device first.";
+            error = Loc.Get("midi.error.selectMidiDevice");
             return false;
         }
 
         var name = presetName.Trim();
         if (string.IsNullOrWhiteSpace(name))
         {
-            error = "Enter a preset name.";
+            error = Loc.Get("midi.error.enterPresetName");
             return false;
         }
 
@@ -210,13 +211,13 @@ public partial class MidiConfigController
 
             OnPropertyChanged(nameof(HasUserLayoutOverride));
             ReloadLayoutForSelectedDevice();
-            StatusText = $"Saved preset “{name}”.";
+            SetStatus(Loc.Text("midi.status.presetSaved", name));
             return true;
         }
         catch (Exception ex)
         {
             error = ex.Message;
-            StatusText = "Failed to save named preset.";
+            SetStatus("midi.status.presetSaveFailed");
             return false;
         }
     }
@@ -230,26 +231,26 @@ public partial class MidiConfigController
         error = string.Empty;
         if (string.IsNullOrWhiteSpace(SelectedDeviceName))
         {
-            error = "Select a MIDI device first.";
+            error = Loc.Get("midi.error.selectMidiDevice");
             return false;
         }
 
         if (SelectedLayoutPreset is not { IsUser: true, FileName: { } fileName })
         {
-            error = "Select a user layout preset to rename. Official presets are read-only — use Save as… first.";
+            error = Loc.Get("midi.error.renameOfficial");
             return false;
         }
 
         var name = presetName.Trim();
         if (string.IsNullOrWhiteSpace(name))
         {
-            error = "Enter a preset name.";
+            error = Loc.Get("midi.error.enterPresetName");
             return false;
         }
 
         if (string.Equals(LayoutName, name, StringComparison.Ordinal))
         {
-            StatusText = "Preset name unchanged.";
+            SetStatus("midi.status.presetNameUnchanged");
             return true;
         }
 
@@ -274,14 +275,15 @@ public partial class MidiConfigController
 
             _layout.Name = name;
             OnPropertyChanged(nameof(LayoutName));
+            OnPropertyChanged(nameof(LayoutDisplayName));
             RefreshLayoutPresets(key);
-            StatusText = $"Renamed preset to “{name}”.";
+            SetStatus(Loc.Text("midi.status.presetRenamed", name));
             return true;
         }
         catch (Exception ex)
         {
             error = ex.Message;
-            StatusText = "Failed to rename preset.";
+            SetStatus("midi.status.presetRenameFailed");
             return false;
         }
     }
@@ -327,7 +329,7 @@ public partial class MidiConfigController
         {
             if (_draftLayout is null)
             {
-                error = "Layout constructor is not ready.";
+                error = Loc.Get("midi.error.constructorNotReady");
                 return false;
             }
 
@@ -338,13 +340,14 @@ public partial class MidiConfigController
 
             _draftLayout = layout;
             RebuildConstructorView();
-            StatusText = $"Imported layout “{layout.Name}” into the editor (not saved yet).";
+            OnPropertyChanged(nameof(LayoutDisplayName));
+            SetStatus(Loc.Text("midi.status.layoutImportedIntoEditor", layout.Name));
             return true;
         }
 
         if (string.IsNullOrWhiteSpace(SelectedDeviceName))
         {
-            error = "Select a MIDI device before importing a layout.";
+            error = Loc.Get("midi.error.selectDeviceBeforeImport");
             return false;
         }
 
@@ -352,7 +355,7 @@ public partial class MidiConfigController
         EnsureDeviceMatchIncludes(layout, deviceName);
         if (string.IsNullOrWhiteSpace(layout.Name) || layout.Name == "Custom")
         {
-            layout.Name = $"{MidiDevicePortNaming.CoreProductName(deviceName)} (imported)";
+            layout.Name = Loc.Format("midi.importedName", MidiDevicePortNaming.CoreProductName(deviceName));
         }
 
         try
@@ -362,14 +365,14 @@ public partial class MidiConfigController
         }
         catch (Exception ex)
         {
-            error = $"Failed to save imported layout: {ex.Message}";
+            error = Loc.Format("midi.error.saveImportedFailed", ex.Message);
             return false;
         }
 
         CancelLearn();
         OnPropertyChanged(nameof(HasUserLayoutOverride));
         ReloadLayoutForSelectedDevice();
-        StatusText = $"Imported layout “{layout.Name}” as a new user preset.";
+        SetStatus(Loc.Text("midi.status.layoutImported", layout.Name));
         return true;
     }
 

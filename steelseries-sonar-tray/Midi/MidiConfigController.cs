@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Windows.Threading;
+using SonarQuickMixer.Localization;
 using SonarQuickMixer.Sonar;
 using WpfApp = System.Windows.Application;
 using WpfMessageBox = System.Windows.MessageBox;
@@ -19,7 +20,7 @@ public sealed partial class MidiConfigController : INotifyPropertyChanged, IDisp
     private readonly Dispatcher _dispatcher;
     private MidiDeviceLayout _layout;
     private string? _selectedDeviceName;
-    private string _statusText = "Move faders/knobs to discover them, then assign Sonar channels.";
+    private LocalizedText _statusMessage = Loc.Text("midi.status.ready");
     private BlueprintControlVm? _learningControl;
     private CancellationTokenSource? _learnCts;
     private readonly Dictionary<string, CcProbe> _ccProbes = new(StringComparer.OrdinalIgnoreCase);
@@ -132,12 +133,12 @@ public sealed partial class MidiConfigController : INotifyPropertyChanged, IDisp
 
             if (IsLayoutConstructorMode)
             {
-                StatusText = "Finish or cancel layout editing before switching presets.";
+                SetStatus("midi.status.finishEditingFirst");
                 RefreshLayoutPresets(selectKey: _presets.GetActivePresetKey(SelectedDeviceName));
                 return;
             }
 
-            if (!ConfirmDiscardBindingDraftsIfNeeded("Switching layout preset will discard unsaved channel assignments."))
+            if (!ConfirmDiscardBindingDraftsIfNeeded(Loc.Get("midi.confirm.switchPreset")))
             {
                 RefreshLayoutPresets(selectKey: _selectedLayoutPreset?.Key
                                                ?? _presets.GetActivePresetKey(SelectedDeviceName));
@@ -156,7 +157,7 @@ public sealed partial class MidiConfigController : INotifyPropertyChanged, IDisp
 
             _presets.SetActivePresetKey(SelectedDeviceName, value.Key);
             ReloadLayoutForSelectedDevice();
-            StatusText = $"Layout preset: {value.DisplayName}";
+            SetStatus(Loc.Text("midi.status.presetSelected", value.DisplayName));
         }
     }
 
@@ -200,11 +201,19 @@ public sealed partial class MidiConfigController : INotifyPropertyChanged, IDisp
 
     public string LayoutName => (_draftLayout ?? _layout).Name;
 
+    /// <summary>UI name; the persisted generic layout name is shown in the active language.</summary>
+    public string LayoutDisplayName =>
+        string.Equals(LayoutName, PresetCatalog.GenericLayoutName, StringComparison.Ordinal)
+            ? Loc.Get("midi.preset.builtIn")
+            : LayoutName;
+
     public string LayoutHint => IsLayoutConstructorMode
-        ? "Layout constructor — drop onto the dashed + slot (beside / between / inside areas). Learn MIDI maps hardware here."
-        : string.IsNullOrWhiteSpace(_layout.Hint)
-            ? "Assign Sonar channels / LED feedback, then Save changes."
-            : _layout.Hint!;
+        ? Loc.Get("midi.status.constructorHint")
+        : !string.IsNullOrWhiteSpace(_layout.HintKey) && Loc.Manager.HasKey(_layout.HintKey!)
+            ? Loc.Get(_layout.HintKey!)
+            : string.IsNullOrWhiteSpace(_layout.Hint)
+                ? Loc.Get("midi.status.assignHint")
+                : _layout.Hint!;
 
     /// <summary>Raised when insert-slot preview mutates VM grid coords (host should invalidate layout).</summary>
     public event Action? BlueprintLayoutRefreshRequested;
@@ -224,7 +233,7 @@ public sealed partial class MidiConfigController : INotifyPropertyChanged, IDisp
                 return;
             }
 
-            if (!ConfirmDiscardBindingDraftsIfNeeded("Switching device will discard unsaved channel assignments."))
+            if (!ConfirmDiscardBindingDraftsIfNeeded(Loc.Get("midi.confirm.switchDevice")))
             {
                 OnPropertyChanged(); // nudge UI to resync selection
                 return;
@@ -253,7 +262,8 @@ public sealed partial class MidiConfigController : INotifyPropertyChanged, IDisp
             d.IsEnabled
             && string.Equals(d.Name, _selectedDeviceName, StringComparison.OrdinalIgnoreCase));
 
-    public string UseDeviceButtonText => IsSelectedDeviceInUse ? "Stop using" : "Use device";
+    public string UseDeviceButtonText =>
+        IsSelectedDeviceInUse ? Loc.Get("midi.stopUsing") : Loc.Get("midi.useDevice");
 
     public bool IsLayoutConstructorMode
     {
@@ -640,19 +650,12 @@ public sealed partial class MidiConfigController : INotifyPropertyChanged, IDisp
     }
 
 
-    public string StatusText
-    {
-        get => _statusText;
-        private set
-        {
-            if (_statusText == value)
-            {
-                return;
-            }
+    public string StatusText => _statusMessage.ToString();
 
-            _statusText = value;
-            OnPropertyChanged();
-        }
+    private void SetStatus(LocalizedText message)
+    {
+        _statusMessage = message;
+        OnPropertyChanged(nameof(StatusText));
     }
 
     /// <summary>Layout map scale (1.0 = 100%). Ctrl+wheel and +/- buttons adjust this.</summary>
@@ -767,7 +770,7 @@ public sealed partial class MidiConfigController : INotifyPropertyChanged, IDisp
     private static string ResolveChannelId(string? channelIdOrDisplayName)
     {
         if (string.IsNullOrWhiteSpace(channelIdOrDisplayName)
-            || string.Equals(channelIdOrDisplayName, "Not assigned", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(channelIdOrDisplayName, Loc.Get("midi.binding.notAssigned"), StringComparison.OrdinalIgnoreCase)
             || string.Equals(channelIdOrDisplayName, "(none)", StringComparison.OrdinalIgnoreCase))
         {
             return MidiBinding.UnassignedChannelId;
@@ -795,8 +798,8 @@ public sealed partial class MidiConfigController : INotifyPropertyChanged, IDisp
         {
             var owners = string.Join(", ", conflicts.Select(c => $"{c.DeviceName} CC{c.Controller}"));
             var result = WpfMessageBox.Show(
-                $"Are you sure? Multiple non-motorized faders on one channel will cause volume fighting.\n\nExisting: {owners}",
-                "MIDI mapping conflict",
+                Loc.Format("midi.conflict.messageWithOwners", owners),
+                Loc.Get("midi.conflict.mappingTitle"),
                 WpfMessageBoxButton.YesNo,
                 WpfMessageBoxImage.Warning);
             tcs.SetResult(result == WpfMessageBoxResult.Yes);
@@ -815,6 +818,7 @@ public sealed partial class MidiConfigController : INotifyPropertyChanged, IDisp
         OnPropertyChanged(nameof(Columns));
         OnPropertyChanged(nameof(Rows));
         OnPropertyChanged(nameof(LayoutName));
+        OnPropertyChanged(nameof(LayoutDisplayName));
         OnPropertyChanged(nameof(LayoutHint));
         OnPropertyChanged(nameof(UseRegionTreeLayout));
         OnPropertyChanged(nameof(UseConstructorTree));
@@ -923,7 +927,7 @@ public sealed partial class MidiConfigController : INotifyPropertyChanged, IDisp
         control.RelativeEncoding = MidiRelativeEncoding.OffsetBinary;
         control.ResetRelativeNeedle();
         control.Action = MidiBindingActions.DefaultFor(control.Type);
-        control.BindingSummary = "Unmapped — move control to discover";
+        control.IsBindingDraft = false;
     }
 
     private MidiBinding? FindBindingForControl(string deviceName, string controlId)
@@ -955,10 +959,7 @@ public sealed partial class MidiConfigController : INotifyPropertyChanged, IDisp
             vm.ResetRelativeNeedle();
         }
 
-        var hardware = MidiBinding.FormatHardwareLabel(binding.IsNote, binding.Controller, binding.IsPitchBend);
-        vm.BindingSummary = binding.HasSonarChannel
-            ? $"{hardware} → {MidiBinding.FormatChannelLabel(binding.ChannelId)} ({binding.Mode})"
-            : $"{hardware} — not assigned";
+        vm.IsBindingDraft = false;
 
         // Restore fader/absolute encoder chrome from persisted or cached volume.
         if (!vm.UsesRelativeNeedle
@@ -984,19 +985,7 @@ public sealed partial class MidiConfigController : INotifyPropertyChanged, IDisp
             control.ResetRelativeNeedle();
         }
 
-        if (control.Controller is int cc)
-        {
-            var hardware = MidiBinding.FormatHardwareLabel(control.IsNote, cc, control.IsPitchBend);
-            control.BindingSummary = !string.IsNullOrWhiteSpace(channelId) && SonarChannels.IsValidChannel(channelId)
-                ? $"{hardware} → {MidiBinding.FormatChannelLabel(channelId)} ({mode}) · draft"
-                : $"{hardware} — not assigned · draft";
-        }
-        else
-        {
-            control.BindingSummary = !string.IsNullOrWhiteSpace(channelId) && SonarChannels.IsValidChannel(channelId)
-                ? $"{MidiBinding.FormatChannelLabel(channelId)} ({mode}) · draft (no hardware yet)"
-                : "Unmapped — move control to discover";
-        }
+        control.IsBindingDraft = true;
     }
 
     private void SetBindingDraftDirty(bool dirty)
@@ -1017,6 +1006,30 @@ public sealed partial class MidiConfigController : INotifyPropertyChanged, IDisp
         string.IsNullOrWhiteSpace(channelId) ? string.Empty : SonarChannels.NormalizeChannel(channelId);
 
     private void OnDevicesChanged() => RefreshDevices();
+
+    /// <summary>
+    /// Re-renders every code-generated string after a language switch. XAML text updates itself
+    /// through the localization bindings; this covers status lines, combo items and view models.
+    /// </summary>
+    public void RefreshLocalization()
+    {
+        OnPropertyChanged(nameof(StatusText));
+        OnPropertyChanged(nameof(LayoutHint));
+        OnPropertyChanged(nameof(LayoutDisplayName));
+        OnPropertyChanged(nameof(UseDeviceButtonText));
+
+        foreach (var device in Devices)
+        {
+            device.RefreshLocalization();
+        }
+
+        foreach (var control in Controls)
+        {
+            control.RefreshLocalization();
+        }
+
+        RefreshLayoutPresets(selectKey: _selectedLayoutPreset?.Key);
+    }
 
     private void OnPropertyChanged([CallerMemberName] string? name = null) =>
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));

@@ -1,3 +1,4 @@
+using SonarQuickMixer.Localization;
 using SonarQuickMixer.Sonar;
 using SonarQuickMixer.Services;
 
@@ -195,7 +196,7 @@ public sealed class FaderPriorityGuard : IDisposable
                 SonarChannels.NormalizeChannel(binding.ChannelId),
                 hardwareVolume,
                 IsMuted: false,
-                Message: "Volume locked by hardware fader");
+                Message: Loc.Get("overlay.volumeLocked"));
 
             RollbackRequested?.Invoke(binding.ChannelId, hardwareVolume, binding.Path, notification);
         }

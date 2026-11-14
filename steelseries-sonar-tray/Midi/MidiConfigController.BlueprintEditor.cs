@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.IO;
+using SonarQuickMixer.Localization;
 
 namespace SonarQuickMixer.Midi;
 
@@ -63,7 +64,7 @@ public partial class MidiConfigController
                 region.ContentJustify = DraftContentJustify;
                 region.ContentAlign = DraftContentAlign;
                 RebuildConstructorView();
-                StatusText = $"Added area {regionId} ({zone}).";
+                SetStatus(Loc.Text("midi.status.addedAreaZone", regionId, zone));
             }
 
             return ok;
@@ -87,7 +88,7 @@ public partial class MidiConfigController
             if (ok)
             {
                 RebuildConstructorView();
-                StatusText = $"Added {control.Label} ({zone}).";
+                SetStatus(Loc.Text("midi.status.addedControlZone", control.Label, zone));
             }
 
             return ok;
@@ -100,7 +101,7 @@ public partial class MidiConfigController
             if (ok)
             {
                 RebuildConstructorView();
-                StatusText = $"Moved control ({zone}).";
+                SetStatus(Loc.Text("midi.status.movedControlZone", zone));
             }
 
             return ok;
@@ -113,7 +114,7 @@ public partial class MidiConfigController
             if (ok)
             {
                 RebuildConstructorView();
-                StatusText = $"Moved area ({zone}).";
+                SetStatus(Loc.Text("midi.status.movedAreaZone", zone));
             }
 
             return ok;
@@ -154,7 +155,7 @@ public partial class MidiConfigController
             if (ok)
             {
                 RebuildConstructorView();
-                StatusText = $"Added area {region.Id} at ({slot.Row},{slot.Col}).";
+                SetStatus(Loc.Text("midi.status.addedAreaAt", region.Id, slot.Row, slot.Col));
             }
 
             return ok;
@@ -177,7 +178,7 @@ public partial class MidiConfigController
             if (ok)
             {
                 RebuildConstructorView();
-                StatusText = $"Added {control.Label} at ({slot.Row},{slot.Col}).";
+                SetStatus(Loc.Text("midi.status.addedControlAt", control.Label, slot.Row, slot.Col));
             }
 
             return ok;
@@ -190,7 +191,7 @@ public partial class MidiConfigController
             if (ok)
             {
                 RebuildConstructorView();
-                StatusText = $"Moved control to ({slot.Row},{slot.Col}).";
+                SetStatus(Loc.Text("midi.status.movedControlTo", slot.Row, slot.Col));
             }
 
             return ok;
@@ -203,7 +204,7 @@ public partial class MidiConfigController
             if (ok)
             {
                 RebuildConstructorView();
-                StatusText = $"Moved area to ({slot.Row},{slot.Col}).";
+                SetStatus(Loc.Text("midi.status.movedAreaTo", slot.Row, slot.Col));
             }
 
             return ok;
@@ -242,7 +243,7 @@ public partial class MidiConfigController
         }
 
         RebuildConstructorView();
-        StatusText = "Removed control from layout (bindings cleaned on Save).";
+        SetStatus("midi.status.controlRemoved");
         return true;
     }
 
@@ -259,9 +260,9 @@ public partial class MidiConfigController
         }
 
         RebuildConstructorView();
-        StatusText = deleteContents
-            ? "Removed area and its contents."
-            : "Removed area (children moved to parent).";
+        SetStatus(deleteContents
+            ? "midi.status.areaRemovedWithContents"
+            : "midi.status.areaRemoved");
         return true;
     }
 
@@ -301,7 +302,7 @@ public partial class MidiConfigController
             control.RowSpan = rowSpan;
             control.ColSpan = colSpan;
             RebuildConstructorView();
-            StatusText = $"Updated {control.Id}: span {rowSpan}×{colSpan}.";
+            SetStatus(Loc.Text("midi.status.controlSpanUpdated", control.Id, rowSpan, colSpan));
             return true;
         }
 
@@ -338,8 +339,13 @@ public partial class MidiConfigController
             }
 
             RebuildConstructorView();
-            StatusText =
-                $"Updated area {region.Id}: span {rowSpan}×{colSpan}, H={region.ContentJustify}, V={region.ContentAlign}.";
+            SetStatus(Loc.Text(
+                "midi.status.areaSpanUpdated",
+                region.Id,
+                rowSpan,
+                colSpan,
+                region.ContentJustify,
+                region.ContentAlign));
             return true;
         }
 
@@ -405,7 +411,7 @@ public partial class MidiConfigController
     {
         if (!MidiFeedbackUi.TryParseTag(tag, out var source, out var style))
         {
-            StatusText = "Unknown LED feedback option.";
+            SetStatus("midi.status.unknownFeedbackOption");
             return false;
         }
 
@@ -416,7 +422,7 @@ public partial class MidiConfigController
     {
         if (!MidiFeedbackUi.TryParseSourceTag(sourceTag, out var source))
         {
-            StatusText = "Unknown LED feedback source.";
+            SetStatus("midi.status.unknownFeedbackSource");
             return false;
         }
 
@@ -427,7 +433,7 @@ public partial class MidiConfigController
     {
         if (!MidiFeedbackUi.TryParseStyleTag(styleTag, out var style))
         {
-            StatusText = "Unknown LED feedback style.";
+            SetStatus("midi.status.unknownFeedbackStyle");
             return false;
         }
 
@@ -441,7 +447,7 @@ public partial class MidiConfigController
             string.Equals(c.Id, controlId, StringComparison.OrdinalIgnoreCase));
         if (control is null)
         {
-            StatusText = "Select a control first.";
+            SetStatus("midi.status.selectControlFirst");
             return false;
         }
 
@@ -459,19 +465,19 @@ public partial class MidiConfigController
 
         if (IsLayoutConstructorMode)
         {
-            StatusText = source == MidiFeedbackSource.None
-                ? $"LED feedback off for {control.Label} (save layout to keep)."
-                : $"LED feedback → {DescribeFeedback(source, style)} for {control.Label} (save layout to keep).";
+            SetStatus(source == MidiFeedbackSource.None
+                ? Loc.Text("midi.status.feedbackOffSave", control.Label)
+                : Loc.Text("midi.status.feedbackSave", DescribeFeedback(source, style), control.Label));
             return true;
         }
 
         SyncLayoutFeedbackDirtyFlag();
         RefreshControlUnsavedIndicators(controlId);
-        StatusText = IsFeedbackDrafted(controlId)
-            ? $"Staged LED feedback → {DescribeFeedback(source, style)} for {control.Label} — Save changes to apply."
+        SetStatus(IsFeedbackDrafted(controlId)
+            ? Loc.Text("midi.status.feedbackStaged", DescribeFeedback(source, style), control.Label)
             : source == MidiFeedbackSource.None
-                ? $"LED feedback off for {control.Label} (matches saved preset)."
-                : $"LED feedback → {DescribeFeedback(source, style)} for {control.Label} (matches saved preset).";
+                ? Loc.Text("midi.status.feedbackOffMatches", control.Label)
+                : Loc.Text("midi.status.feedbackMatches", DescribeFeedback(source, style), control.Label));
         return true;
     }
 
@@ -490,12 +496,23 @@ public partial class MidiConfigController
         OnPropertyChanged(nameof(DraftFeedbackStyleEnabled));
     }
 
-    private static string DescribeFeedback(MidiFeedbackSource source, MidiFeedbackStyle style) =>
-        source == MidiFeedbackSource.None
-            ? "Off"
-            : style == MidiFeedbackStyle.Blink
-                ? $"{source} (blink)"
-                : $"{source} (solid)";
+    private static string DescribeFeedback(MidiFeedbackSource source, MidiFeedbackStyle style)
+    {
+        if (source == MidiFeedbackSource.None)
+        {
+            return Loc.Get("midi.feedback.describe.off");
+        }
+
+        var sourceLabel = source == MidiFeedbackSource.Mute
+            ? Loc.Get("midi.feedback.source.muteLabel")
+            : Loc.Get("midi.feedback.source.channelAssignedLabel");
+
+        return Loc.Format(
+            style == MidiFeedbackStyle.Blink
+                ? "midi.feedback.describe.blink"
+                : "midi.feedback.describe.solid",
+            sourceLabel);
+    }
 
     /// <summary>Faders only support Off / Channel assigned (soft takeover).</summary>
     private static MidiFeedbackSource NormalizeFeedbackSource(
@@ -545,7 +562,7 @@ public partial class MidiConfigController
     {
         if (string.IsNullOrWhiteSpace(SelectedDeviceName))
         {
-            StatusText = "Select a device first.";
+            SetStatus("midi.status.selectDeviceFirst");
             return false;
         }
 
@@ -564,9 +581,9 @@ public partial class MidiConfigController
             }
             else
             {
-                if (string.IsNullOrWhiteSpace(layout.Name) || layout.Name == "Generic Custom Grid")
+                if (string.IsNullOrWhiteSpace(layout.Name) || layout.Name == PresetCatalog.GenericLayoutName)
                 {
-                    layout.Name = $"{MidiDevicePortNaming.CoreProductName(deviceName)} (custom)";
+                    layout.Name = Loc.Format("midi.customName", MidiDevicePortNaming.CoreProductName(deviceName));
                 }
 
                 path = _presets.SaveUserLayout(layout, createNewFile: true);
@@ -576,13 +593,14 @@ public partial class MidiConfigController
             _layout = PresetCatalog.CloneLayout(layout);
             OnPropertyChanged(nameof(HasUserLayoutOverride));
             OnPropertyChanged(nameof(LayoutName));
+            OnPropertyChanged(nameof(LayoutDisplayName));
             RefreshLayoutPresets(MidiPresetSelectionStore.UserKey(Path.GetFileName(path)));
             CapturePersistedFeedbackSnapshot();
             return true;
         }
         catch
         {
-            StatusText = "Failed to save layout feedback.";
+            SetStatus("midi.status.feedbackSaveFailed");
             return false;
         }
     }
@@ -923,6 +941,7 @@ public partial class MidiConfigController
         OnPropertyChanged(nameof(Rows));
         OnPropertyChanged(nameof(Columns));
         OnPropertyChanged(nameof(LayoutName));
+        OnPropertyChanged(nameof(LayoutDisplayName));
         OnPropertyChanged(nameof(LayoutHint));
         SyncRegionSelection();
     }
