@@ -53,6 +53,12 @@
                                    FontSize="11"
                                    Margin="0,2,0,0"
                                    TextTrimming="CharacterEllipsis"/>
+                        <TextBlock x:Name="MidiDeviceInfoText"
+                                   Visibility="Collapsed"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   FontSize="11"
+                                   Margin="0,2,0,0"
+                                   TextTrimming="CharacterEllipsis"/>
                     </StackPanel>
                     <StackPanel Grid.Column="1"
                                 Orientation="Horizontal"
@@ -544,6 +550,12 @@
                               Margin="0,0,0,10"
                               Checked="FeatureToggle_Changed"
                               Unchecked="FeatureToggle_Changed"/>
+                    <CheckBox x:Name="ShowMidiDeviceNameToggle"
+                               Content="{loc:Tr settings.showMidiDeviceName}"
+                               Style="{StaticResource FluentToggleStyle}"
+                               Margin="0,0,0,10"
+                               Checked="FeatureToggle_Changed"
+                               Unchecked="FeatureToggle_Changed"/>
                     <TextBlock Text="{loc:Tr settings.appearance}"
                                Foreground="{StaticResource TextPrimaryBrush}"
                                FontSize="12"

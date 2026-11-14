@@ -28,6 +28,7 @@ public sealed class SettingsPanelController
     private readonly ToggleButton _showDeviceNameToggle;
     private readonly ToggleButton _showDeviceBatteryToggle;
     private readonly ToggleButton _showDeviceConnectionToggle;
+    private readonly ToggleButton _showMidiDeviceNameToggle;
     private readonly ToggleButton _showOutputDeviceSelectorToggle;
     private readonly ToggleButton _showMicrophoneDeviceSelectorToggle;
     private readonly System.Windows.Controls.ComboBox _mediaKeysOverrideChannelCombo;
@@ -59,6 +60,7 @@ public sealed class SettingsPanelController
         ToggleButton showDeviceNameToggle,
         ToggleButton showDeviceBatteryToggle,
         ToggleButton showDeviceConnectionToggle,
+        ToggleButton showMidiDeviceNameToggle,
         ToggleButton showOutputDeviceSelectorToggle,
         ToggleButton showMicrophoneDeviceSelectorToggle,
         MidiControlService? midiControl = null,
@@ -80,6 +82,7 @@ public sealed class SettingsPanelController
         _showDeviceNameToggle = showDeviceNameToggle;
         _showDeviceBatteryToggle = showDeviceBatteryToggle;
         _showDeviceConnectionToggle = showDeviceConnectionToggle;
+        _showMidiDeviceNameToggle = showMidiDeviceNameToggle;
         _showOutputDeviceSelectorToggle = showOutputDeviceSelectorToggle;
         _showMicrophoneDeviceSelectorToggle = showMicrophoneDeviceSelectorToggle;
         _mediaKeysOverrideChannelCombo = mediaKeysOverrideChannelCombo;
@@ -111,6 +114,7 @@ public sealed class SettingsPanelController
             _showDeviceNameToggle.IsChecked = _settings.ShowDeviceName;
             _showDeviceBatteryToggle.IsChecked = _settings.ShowDeviceBattery;
             _showDeviceConnectionToggle.IsChecked = _settings.ShowDeviceConnection;
+            _showMidiDeviceNameToggle.IsChecked = _settings.ShowMidiDeviceName;
             _showOutputDeviceSelectorToggle.IsChecked = _settings.ShowOutputDeviceSelector;
             _showMicrophoneDeviceSelectorToggle.IsChecked = _settings.ShowMicrophoneDeviceSelector;
         }
@@ -146,6 +150,7 @@ public sealed class SettingsPanelController
         _settings.ShowDeviceName = _showDeviceNameToggle.IsChecked == true;
         _settings.ShowDeviceBattery = _showDeviceBatteryToggle.IsChecked == true;
         _settings.ShowDeviceConnection = _showDeviceConnectionToggle.IsChecked == true;
+        _settings.ShowMidiDeviceName = _showMidiDeviceNameToggle.IsChecked == true;
         _settings.ShowOutputDeviceSelector = _showOutputDeviceSelectorToggle.IsChecked == true;
         _settings.ShowMicrophoneDeviceSelector = _showMicrophoneDeviceSelectorToggle.IsChecked == true;
     }
@@ -246,12 +251,15 @@ public sealed class SettingsPanelController
 
     public void ApplyMidiSettings()
     {
+        var enabled = _midiEnabledToggle?.IsChecked == true;
+        _showMidiDeviceNameToggle.IsEnabled = enabled;
+        _showMidiDeviceNameToggle.Opacity = enabled ? 1.0 : 0.55;
+
         if (_midiControl is null)
         {
             return;
         }
 
-        var enabled = _midiEnabledToggle?.IsChecked == true;
         _settings.MidiEnabled = enabled;
         _midiControl.SetEnabled(enabled);
     }

@@ -166,6 +166,10 @@ Settings save on toggle or when the mixer closes. Tray icon style and language a
 | `Language` | `"auto"` | `"auto"` (Windows display language), `"en"`, `"ru"`, or a drop-in language code |
 | `MidiEnabled` | `false` | Open selected MIDI input/output ports and apply bindings |
 | `MidiRelativeStep` | `0.02` | Volume step per relative encoder tick (2%) |
+| `ShowDeviceName` | `true` | Headset name under the mixer status line |
+| `ShowDeviceBattery` | `true` | Headset battery level in the mixer header |
+| `ShowDeviceConnection` | `true` | Headset connection method (USB / 2.4 GHz / Bluetooth) |
+| `ShowMidiDeviceName` | `true` | MIDI controller name when MIDI Control is on and a device is in use |
 
 You can edit the file while running; reopen settings or restart for all services to pick up changes.
 

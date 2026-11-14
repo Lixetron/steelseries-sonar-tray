@@ -119,6 +119,7 @@ public partial class MainWindow : Window
             ShowDeviceNameToggle,
             ShowDeviceBatteryToggle,
             ShowDeviceConnectionToggle,
+            ShowMidiDeviceNameToggle,
             ShowOutputDeviceSelectorToggle,
             ShowMicrophoneDeviceSelectorToggle,
             _midiControl,
@@ -824,6 +825,7 @@ public partial class MainWindow : Window
         {
             DeviceInfoText.Visibility = Visibility.Collapsed;
             BatteryIndicator.Visibility = Visibility.Collapsed;
+            ApplyMidiDeviceInfoToUi();
         }
     }
 
@@ -840,6 +842,8 @@ public partial class MainWindow : Window
             DeviceInfoText.Text = secondary;
             DeviceInfoText.Visibility = Visibility.Visible;
         }
+
+        ApplyMidiDeviceInfoToUi();
 
         var batteryText = HeadsetDeviceInfoFormatter.FormatBatteryPercentText(info, _settings);
         var iconKind = _settings.ShowDeviceBattery
@@ -869,6 +873,23 @@ public partial class MainWindow : Window
         BatteryIndicator.PercentText = batteryText ?? string.Empty;
         BatteryIndicator.Visibility = Visibility.Visible;
         BatteryIndicator.ToolTip = BuildBatteryTooltip(info, iconKind);
+    }
+
+    private void ApplyMidiDeviceInfoToUi()
+    {
+        var text = MidiDeviceInfoFormatter.Format(
+            _midiControl?.MappingStore.EnabledDevices,
+            _settings);
+
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            MidiDeviceInfoText.Visibility = Visibility.Collapsed;
+            MidiDeviceInfoText.Text = string.Empty;
+            return;
+        }
+
+        MidiDeviceInfoText.Text = text;
+        MidiDeviceInfoText.Visibility = Visibility.Visible;
     }
 
     private static string BuildBatteryTooltip(HeadsetDeviceInfo? info, BatteryIconKind kind)
