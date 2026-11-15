@@ -17,7 +17,6 @@ namespace SonarQuickMixer;
 public partial class App : Application
 {
     private WinForms.NotifyIcon? _notifyIcon;
-    private WinForms.ContextMenuStrip? _trayMenu;
     private MainWindow? _mainWindow;
     private MidiConfigWindow? _midiConfigWindow;
     private AppSettings? _settings;
@@ -33,6 +32,9 @@ public partial class App : Application
 
     protected override void OnStartup(StartupEventArgs e)
     {
+        // Must run before any window is created so native menus use the dark theme.
+        NativeDarkMode.Enable();
+
         // Apply any pending updates from previous startup
         Launcher.ApplyPendingUpdateIfExists();
 
@@ -83,8 +85,7 @@ public partial class App : Application
         };
 
         _notifyIcon.MouseClick += NotifyIcon_MouseClick;
-
-        ApplyTrayMenu();
+        _notifyIcon.MouseUp += NotifyIcon_MouseUp;
 
         _singleInstance.StartListening(() => ShowMixer());
 
@@ -133,30 +134,11 @@ public partial class App : Application
     private string BuildTrayTooltip() =>
         Loc.Get(_trayUpdateAvailable ? "tray.tooltipUpdate" : "tray.tooltip");
 
-    private void ApplyTrayMenu()
-    {
-        if (_notifyIcon is null)
-        {
-            return;
-        }
-
-        var menu = new WinForms.ContextMenuStrip();
-        menu.Items.Add(Loc.Get("tray.openMixer"), null, (_, _) => ShowMixer());
-        menu.Items.Add(Loc.Get("tray.midiSetup"), null, (_, _) => ShowMidiSetup());
-        menu.Items.Add(Loc.Get("tray.exit"), null, (_, _) => ShutdownApplication());
-
-        var previousMenu = _trayMenu;
-        _trayMenu = menu;
-        _notifyIcon.ContextMenuStrip = menu;
-        previousMenu?.Dispose();
-    }
-
     private void Localization_LanguageChanged(object? sender, EventArgs e)
     {
         Dispatcher.Invoke(() =>
         {
             ApplyTrayIcon();
-            ApplyTrayMenu();
             _volumeOverlay?.RefreshLocalization();
         });
     }
@@ -169,6 +151,22 @@ public partial class App : Application
         }
 
         ShowMixer(new System.Drawing.Point(e.X, e.Y));
+    }
+
+    private void NotifyIcon_MouseUp(object? sender, WinForms.MouseEventArgs e)
+    {
+        if (e.Button != WinForms.MouseButtons.Right || _mainWindow is null)
+        {
+            return;
+        }
+
+        var owner = new WindowInteropHelper(_mainWindow).Handle;
+        NativeTrayMenu.Show(owner, WinForms.Cursor.Position, new[]
+        {
+            new TrayMenuCommand(Loc.Get("tray.openMixer"), () => ShowMixer()),
+            new TrayMenuCommand(Loc.Get("tray.midiSetup"), ShowMidiSetup),
+            new TrayMenuCommand(Loc.Get("tray.exit"), ShutdownApplication)
+        });
     }
 
     private void ShowMixer(System.Drawing.Point? anchorScreenPoint = null)
@@ -253,8 +251,6 @@ public partial class App : Application
             _notifyIcon = null;
         }
 
-        _trayMenu?.Dispose();
-        _trayMenu = null;
         Loc.LanguageChanged -= Localization_LanguageChanged;
 
         _midiConfigWindow?.Close();

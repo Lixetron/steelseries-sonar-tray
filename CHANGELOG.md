@@ -16,6 +16,10 @@ How to read this: each release lists **user-visible** changes. Download builds f
 - JSON language packs make additional translations drop-in: put `Languages\<code>.json` beside `SonarQuickMixer.exe`.
 - **MIDI device name** in the mixer header when a controller is in use, alongside headset info (optional under **Settings → Device info**).
 
+### Fixed
+
+- The tray right-click menu now uses the native dark Windows menu instead of the light WinForms popup, so it matches the rest of the dark UI.
+
 ## [1.2.0] - 2026-08-27
 
 ### Added
