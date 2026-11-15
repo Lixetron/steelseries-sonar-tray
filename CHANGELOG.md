@@ -10,11 +10,19 @@ How to read this: each release lists **user-visible** changes. Download builds f
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-11-15
+
 ### Added
 
+- **Automatic updates**: new GitHub releases can be downloaded and installed from inside the app, with a progress window showing file size and download speed. Apply the update immediately or let it install on the next start.
 - **Multi-language UI**: English and Russian, switchable under **Settings → Appearance → Language** (or automatic from the Windows display language). Language changes apply immediately.
 - JSON language packs make additional translations drop-in: put `Languages\<code>.json` beside `SonarQuickMixer.exe`.
 - **MIDI device name** in the mixer header when a controller is in use, alongside headset info (optional under **Settings → Device info**).
+
+### Changed
+
+- Lower background load: the mixer snapshot now refreshes every 30 seconds while idle (it still refreshes immediately when shown), and streamer-mode state is cached briefly.
+- The audio visualizer releases its WASAPI level monitor while the overlay is hidden.
 
 ### Fixed
 
@@ -76,7 +84,8 @@ How to read this: each release lists **user-visible** changes. Download builds f
 - First public release: tray mixer, media keys override, volume overlay, audio visualizer, Discord screenshare echo fix, Start with Windows
 - Automated GitHub Releases with downloadable builds
 
-[Unreleased]: https://github.com/lixetron/steelseries-sonar-tray/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/lixetron/steelseries-sonar-tray/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/lixetron/steelseries-sonar-tray/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/lixetron/steelseries-sonar-tray/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/lixetron/steelseries-sonar-tray/compare/v1.0.2...v1.1.0
 [1.0.2]: https://github.com/lixetron/steelseries-sonar-tray/compare/v1.0.1...v1.0.2
