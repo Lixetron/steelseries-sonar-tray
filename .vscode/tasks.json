@@ -18,6 +18,19 @@
       "problemMatcher": "$msCompile"
     },
     {
+      "label": "build: debug",
+      "type": "shell",
+      "command": "dotnet",
+      "args": [
+        "build",
+        "steelseries-sonar-tray/steelseries-sonar-tray.csproj",
+        "-c",
+        "Debug"
+      ],
+      "group": "build",
+      "problemMatcher": "$msCompile"
+    },
+    {
       "label": "run",
       "type": "shell",
       "command": "dotnet",
@@ -27,6 +40,19 @@
         "steelseries-sonar-tray/steelseries-sonar-tray.csproj"
       ],
       "problemMatcher": "$msCompile"
+    },
+    {
+      // Приложение живёт в трее и не завершается по закрытию окон — перед
+      // повторной отладкой старый экземпляр нужно остановить.
+      "label": "app: stop running instance",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-Command",
+        "Get-Process SonarQuickMixer -ErrorAction SilentlyContinue | Stop-Process -Force"
+      ],
+      "problemMatcher": []
     },
     {
       "label": "publish: dist",
